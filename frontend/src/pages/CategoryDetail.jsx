@@ -292,22 +292,22 @@ const CategoryDetail = () => {
           </div>
 
           {/* By Budget Section */}
-          <div className="px-3 md:px-4 py-4 md:py-6">
-            <h3 className="text-base md:text-lg font-bold text-gray-900 mb-3">
+          <div className="px-3 md:px-4 py-3 md:py-4">
+            <h3 className="text-base md:text-lg font-bold text-gray-900 mb-3 md:mb-4">
               {currentData.budgetLabel}
             </h3>
             
-            <div className="grid grid-cols-3 gap-2 md:gap-3">
+            <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 md:gap-4">
               {currentData.budgetRanges.map((budget) => (
                 <button
                   key={budget.id}
                   onClick={() => handleBudgetClick(budget)}
-                  className="flex flex-col items-center py-2.5 md:py-3 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all"
+                  className="group flex flex-col items-center py-2.5 md:py-4 bg-white hover:bg-gradient-to-br hover:from-blue-50 hover:to-indigo-50 rounded-xl transition-all duration-200 border-2 border-gray-100 hover:border-blue-400 hover:shadow-lg active:scale-95"
                 >
-                  <div className="w-12 h-12 md:w-14 md:h-14 bg-white rounded-full flex items-center justify-center mb-1 md:mb-1.5 shadow-sm">
-                    <span className="text-sm md:text-base font-bold text-gray-900">{budget.label}</span>
+                  <div className="w-10 h-10 md:w-16 md:h-16 bg-gradient-to-br from-blue-50 to-indigo-50 group-hover:from-blue-100 group-hover:to-indigo-100 rounded-xl md:rounded-2xl flex items-center justify-center mb-1 md:mb-2 shadow-sm group-hover:shadow-md transition-all duration-200">
+                    <span className="text-xs md:text-base font-black text-blue-600 group-hover:text-blue-700">{budget.label}</span>
                   </div>
-                  <span className="text-[8px] md:text-[9px] text-center font-medium text-gray-700 px-0.5 leading-tight">
+                  <span className="text-[9px] md:text-xs text-center font-bold text-gray-700 group-hover:text-blue-600 px-1 leading-tight transition-colors duration-200">
                     {budget.description}
                   </span>
                 </button>
@@ -316,31 +316,31 @@ const CategoryDetail = () => {
               {/* View All Button */}
               <button
                 onClick={handleViewAll}
-                className="flex flex-col items-center justify-center py-2.5 md:py-3 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all"
+                className="flex flex-col items-center justify-center py-3 md:py-4 bg-gradient-to-br from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 rounded-xl transition-all duration-200 shadow-md hover:shadow-xl active:scale-95"
               >
-                <div className="w-12 h-12 md:w-14 md:h-14 bg-white rounded-full flex items-center justify-center mb-1 md:mb-1.5 shadow-sm">
-                  <ChevronRight size={20} className="text-gray-700" />
+                <div className="w-10 h-10 md:w-16 md:h-16 bg-white/20 backdrop-blur-sm rounded-xl md:rounded-2xl flex items-center justify-center mb-1 md:mb-2">
+                  <ChevronRight size={18} className="text-white md:w-6 md:h-6" strokeWidth={2.5} />
                 </div>
-                <span className="text-[8px] md:text-[9px] font-bold text-gray-700">View All</span>
+                <span className="text-[9px] md:text-xs font-black text-white">View All</span>
               </button>
             </div>
           </div>
 
           {/* Subcategories Section */}
-          <div className="px-3 md:px-4 py-4 md:py-6">
-            <h3 className="text-base md:text-lg font-bold text-gray-900 mb-3">Browse by Type</h3>
+          <div className="px-3 md:px-4 py-3 md:py-4">
+            <h3 className="text-base md:text-lg font-bold text-gray-900 mb-3 md:mb-4">Browse by Type</h3>
             
-            <div className="grid grid-cols-3 gap-2 md:gap-3">
+            <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 md:gap-4">
               {currentData.subcategories.map((subcategory) => (
                 <button
                   key={subcategory.id}
                   onClick={() => handleSubcategoryClick(subcategory)}
-                  className="flex flex-col items-center py-2.5 md:py-3 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all"
+                  className="group flex flex-col items-center py-3 md:py-4 bg-white hover:bg-gradient-to-br hover:from-blue-50 hover:to-indigo-50 rounded-xl transition-all duration-200 border-2 border-gray-100 hover:border-blue-400 hover:shadow-lg active:scale-95"
                 >
-                  <div className="w-12 h-12 md:w-14 md:h-14 bg-white rounded-full flex items-center justify-center mb-1 md:mb-1.5 shadow-sm">
-                    <span className="text-xl md:text-2xl">{subcategory.icon}</span>
+                  <div className="w-14 h-14 md:w-16 md:h-16 bg-gradient-to-br from-gray-50 to-gray-100 group-hover:from-blue-100 group-hover:to-indigo-100 rounded-2xl flex items-center justify-center mb-2 shadow-sm group-hover:shadow-md transition-all duration-200">
+                    <span className="text-2xl md:text-3xl">{subcategory.icon}</span>
                   </div>
-                  <span className="text-[8px] md:text-[9px] font-semibold text-gray-900 text-center leading-tight px-0.5">
+                  <span className="text-[10px] md:text-xs font-bold text-gray-800 group-hover:text-blue-600 text-center leading-tight px-1 transition-colors duration-200">
                     {subcategory.name}
                   </span>
                 </button>

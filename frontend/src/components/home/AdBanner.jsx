@@ -110,7 +110,7 @@ const AdBanner = () => {
       </div>
 
       {/* Desktop View - Horizontal Banner */}
-      <div className="hidden md:block relative h-64 lg:h-72 animate-fade-in">
+      <div className="hidden md:block relative h-72 lg:h-80 animate-fade-in">
         {/* Background Pattern */}
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-0 right-0 w-64 h-64 bg-white rounded-full -mr-32 -mt-32"></div>

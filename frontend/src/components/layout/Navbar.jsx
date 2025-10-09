@@ -173,6 +173,14 @@ const Navbar = () => {
 
           {/* Right Side - Login/User and Icons */}
           <div className="flex items-center gap-3">
+            {/* Pricing Link */}
+            <Link 
+              to="/subscription" 
+              className="px-3 py-1.5 text-sm font-semibold text-blue-600 hover:bg-blue-50 rounded-lg transition flex-shrink-0"
+            >
+              Pricing
+            </Link>
+            
             {/* Heart Icon */}
             <Link 
               to="/favorites" 
@@ -236,6 +244,13 @@ const Navbar = () => {
                     </Link>
                     <Link to="/dashboard/profile" className="block px-4 py-2.5 hover:bg-gray-50 text-gray-700 text-sm">
                       Profile
+                    </Link>
+                    <hr className="my-2 border-gray-100" />
+                    <Link to="/my-subscription" className="block px-4 py-2.5 hover:bg-blue-50 text-blue-600 text-sm font-semibold">
+                      ⭐ My Subscription
+                    </Link>
+                    <Link to="/my-boosts" className="block px-4 py-2.5 hover:bg-orange-50 text-orange-600 text-sm font-semibold">
+                      🚀 My Boosts
                     </Link>
                     <hr className="my-2 border-gray-100" />
                     <button

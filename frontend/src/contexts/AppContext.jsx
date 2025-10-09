@@ -27,6 +27,14 @@ export const AppProvider = ({ children }) => {
     { id: 8, name: 'Pets', icon: 'Heart', slug: 'pets', image: 'pet.png' },
     { id: 9, name: 'Sports', icon: 'Dumbbell', slug: 'sports', image: 'sport.png' },
     { id: 10, name: 'Properties', icon: 'Home', slug: 'properties', image: 'realstate.png' },
+    { id: 11, name: 'Cameras', icon: 'Camera', slug: 'cameras', image: 'mobile.png' },
+    { id: 12, name: 'Gaming', icon: 'Gamepad', slug: 'gaming', image: 'mobile.png' },
+    { id: 13, name: 'Tools', icon: 'Wrench', slug: 'tools', image: 'sport.png' },
+    { id: 14, name: 'Music', icon: 'Music', slug: 'music', image: 'book.png' },
+    { id: 15, name: 'Party', icon: 'Gift', slug: 'party', image: 'fashion.png' },
+    { id: 16, name: 'Appliances', icon: 'Home', slug: 'appliances', image: 'furniture.png' },
+    { id: 17, name: 'Travel Gear', icon: 'Luggage', slug: 'travel', image: 'fashion.png' },
+    { id: 18, name: 'Drones', icon: 'Drone', slug: 'drones', image: 'mobile.png' },
   ]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState(null);

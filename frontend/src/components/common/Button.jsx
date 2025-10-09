@@ -4,6 +4,9 @@ const Button = ({
   size = 'md', 
   className = '', 
   icon: Icon,
+  onClick,
+  type,
+  disabled,
   ...props 
 }) => {
   const baseStyles = 'inline-flex items-center justify-center font-medium rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed';
@@ -22,10 +25,22 @@ const Button = ({
     lg: 'px-6 py-3 text-lg gap-2',
   };
   
+  // Filter props to only include valid HTML button attributes
+  const validProps = {};
+  const validAttributes = ['id', 'name', 'value', 'form', 'formAction', 'formEncType', 'formMethod', 'formNoValidate', 'formTarget', 'aria-label', 'aria-pressed', 'aria-expanded', 'data-testid', 'title'];
+  validAttributes.forEach(attr => {
+    if (props[attr] !== undefined) {
+      validProps[attr] = props[attr];
+    }
+  });
+  
   return (
     <button 
       className={`${baseStyles} ${variants[variant]} ${sizes[size]} ${className}`}
-      {...props}
+      onClick={onClick}
+      type={type}
+      disabled={disabled}
+      {...validProps}
     >
       {Icon && <Icon size={size === 'sm' ? 16 : size === 'lg' ? 24 : 20} />}
       {children}

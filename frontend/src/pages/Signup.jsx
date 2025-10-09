@@ -145,27 +145,27 @@ const Signup = () => {
       </div>
 
       {/* Right Side - Signup Form */}
-      <div className="flex-1 flex items-center justify-center p-6 md:p-12 bg-gray-50">
+      <div className="flex-1 flex items-center justify-center p-4 md:p-12 bg-gray-50">
         <div className="w-full max-w-md">
           {/* Mobile Logo */}
-          <Link to="/" className="md:hidden inline-block mb-8">
-            <div className="text-3xl font-black bg-gradient-to-r from-indigo-600 to-pink-600 bg-clip-text text-transparent">
+          <Link to="/" className="md:hidden inline-block mb-4">
+            <div className="text-2xl md:text-3xl font-black bg-gradient-to-r from-indigo-600 to-pink-600 bg-clip-text text-transparent">
               RentX
             </div>
           </Link>
 
           {/* Form Container */}
-          <div className="bg-white rounded-2xl shadow-2xl p-8 md:p-10 border border-gray-100">
-            <div className="mb-8">
-              <h2 className="text-3xl md:text-4xl font-black text-gray-900 mb-2">
+          <div className="bg-white rounded-2xl shadow-2xl p-4 sm:p-6 md:p-10 border border-gray-100">
+            <div className="mb-4 md:mb-8">
+              <h2 className="text-xl sm:text-2xl md:text-4xl font-black text-gray-900 mb-1 md:mb-2">
                 Get Started Free
               </h2>
-              <p className="text-gray-600">
+              <p className="text-gray-600 text-sm md:text-base">
                 Create your account to start renting today
               </p>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-3 md:space-y-4">
               {error && (
                 <div className="p-4 bg-red-50 border-l-4 border-red-500 rounded-r-xl animate-slide-up">
                   <p className="text-red-700 text-sm font-medium">{error}</p>
@@ -174,65 +174,65 @@ const Signup = () => {
 
               {/* Name */}
               <div className="space-y-2">
-                <label className="block text-sm font-semibold text-gray-700">
+                <label className="block text-xs md:text-sm font-semibold text-gray-700">
                   Full Name *
                 </label>
                 <div className="relative group">
-                  <User className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-indigo-600 transition" size={20} />
+                  <User className="absolute left-3 md:left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-indigo-600 transition" size={16} />
                   <input
                     type="text"
                     name="name"
                     value={formData.name}
                     onChange={handleChange}
                     placeholder="John Doe"
-                    className="w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition text-gray-900 placeholder:text-gray-400"
+                    className="w-full pl-9 md:pl-12 pr-3 md:pr-4 py-2.5 md:py-3 text-sm md:text-base border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition text-gray-900 placeholder:text-gray-400"
                   />
                 </div>
               </div>
 
               {/* Email */}
               <div className="space-y-2">
-                <label className="block text-sm font-semibold text-gray-700">
+                <label className="block text-xs md:text-sm font-semibold text-gray-700">
                   Email Address *
                 </label>
                 <div className="relative group">
-                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-indigo-600 transition" size={20} />
+                  <Mail className="absolute left-3 md:left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-indigo-600 transition" size={16} />
                   <input
                     type="email"
                     name="email"
                     value={formData.email}
                     onChange={handleChange}
                     placeholder="you@example.com"
-                    className="w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition text-gray-900 placeholder:text-gray-400"
+                    className="w-full pl-9 md:pl-12 pr-3 md:pr-4 py-2.5 md:py-3 text-sm md:text-base border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition text-gray-900 placeholder:text-gray-400"
                   />
                 </div>
               </div>
 
               {/* Phone */}
               <div className="space-y-2">
-                <label className="block text-sm font-semibold text-gray-700">
+                <label className="block text-xs md:text-sm font-semibold text-gray-700">
                   Phone Number <span className="text-gray-400 font-normal">(optional)</span>
                 </label>
                 <div className="relative group">
-                  <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-indigo-600 transition" size={20} />
+                  <Phone className="absolute left-3 md:left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-indigo-600 transition" size={16} />
                   <input
                     type="tel"
                     name="phone"
                     value={formData.phone}
                     onChange={handleChange}
                     placeholder="+91 98765 43210"
-                    className="w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition text-gray-900 placeholder:text-gray-400"
+                    className="w-full pl-9 md:pl-12 pr-3 md:pr-4 py-2.5 md:py-3 text-sm md:text-base border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition text-gray-900 placeholder:text-gray-400"
                   />
                 </div>
               </div>
 
               {/* Password */}
               <div className="space-y-2">
-                <label className="block text-sm font-semibold text-gray-700">
+                <label className="block text-xs md:text-sm font-semibold text-gray-700">
                   Password *
                 </label>
                 <div className="relative group">
-                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-indigo-600 transition" size={20} />
+                  <Lock className="absolute left-3 md:left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-indigo-600 transition" size={16} />
                   <input
                     type={showPassword ? 'text' : 'password'}
                     name="password"
@@ -279,11 +279,11 @@ const Signup = () => {
 
               {/* Confirm Password */}
               <div className="space-y-2">
-                <label className="block text-sm font-semibold text-gray-700">
+                <label className="block text-xs md:text-sm font-semibold text-gray-700">
                   Confirm Password *
                 </label>
                 <div className="relative group">
-                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-indigo-600 transition" size={20} />
+                  <Lock className="absolute left-3 md:left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-indigo-600 transition" size={16} />
                   <input
                     type={showConfirmPassword ? 'text' : 'password'}
                     name="confirmPassword"
