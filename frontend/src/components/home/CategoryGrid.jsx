@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../../contexts/AppContext';
 import { ChevronRight } from 'lucide-react';
+import AdBanner from './AdBanner';
 
 // Import category images
 import carImg from '../../assets/car.png';
@@ -42,31 +43,55 @@ const CategoryGrid = () => {
   return (
     <div className="py-4 md:py-6 px-3 md:px-4 bg-gray-50">
       <div className="max-w-7xl mx-auto">
-        {/* Desktop Grid - 4 columns per row, 2 rows visible */}
-        <div className="hidden md:grid grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 lg:gap-4">
+        {/* Mobile - Ad Banner on Top */}
+        <div className="md:hidden mb-4">
+          <AdBanner />
+        </div>
+
+        {/* Desktop - Ad Banner on Top */}
+        <div className="hidden md:block mb-6 lg:mb-8">
+          <AdBanner />
+        </div>
+
+        {/* Desktop Categories Grid - All categories visible */}
+        <div className="hidden md:block">
+          <h2 className="text-xl lg:text-2xl font-bold text-gray-900 mb-3 lg:mb-4">Browse Categories</h2>
+          <div className="grid grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-3 lg:gap-4">
           {categories.map((category) => {
             return (
               <button
                 key={category.id}
                 onClick={() => handleCategoryClick(category)}
-                className="group flex flex-col items-center transition-all duration-200 hover:-translate-y-1"
+                className="group relative flex flex-col items-center transition-all duration-300 hover:-translate-y-1"
               >
-                <div 
-                  className="w-full aspect-square rounded-xl overflow-hidden bg-gray-100 mb-2 flex items-center justify-center shadow-sm hover:shadow-md transition-shadow duration-200"
-                >
-                  <img
-                    src={imageMap[category.image]}
-                    alt={category.name}
-                    className="object-contain group-hover:scale-110 transition-transform duration-300"
-                    style={{ width: '55%', height: '55%' }}
-                  />
-                </div>
-                <div className="text-center">
-                  <h3 className="font-bold text-xs lg:text-sm text-gray-800 line-clamp-1 tracking-tight">{category.name}</h3>
+                {/* Hover gradient background */}
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                
+                <div className="relative w-full">
+                  {/* Image Container with enhanced styling - Smaller */}
+                  <div className="w-full aspect-square rounded-xl overflow-hidden bg-white mb-2 flex items-center justify-center shadow-sm group-hover:shadow-lg transition-all duration-300 border border-gray-100 group-hover:border-blue-200">
+                    <img
+                      src={imageMap[category.image]}
+                      alt={category.name}
+                      className="object-contain group-hover:scale-105 transition-transform duration-300"
+                      style={{ width: '55%', height: '55%' }}
+                    />
+                  </div>
+                  
+                  {/* Category Name with better styling - Smaller text */}
+                  <div className="text-center px-1">
+                    <h3 className="font-bold text-xs lg:text-sm text-gray-800 group-hover:text-blue-600 line-clamp-1 tracking-tight transition-colors duration-200">
+                      {category.name}
+                    </h3>
+                  </div>
+
+                  {/* Subtle indicator badge */}
+                  <div className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-blue-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                 </div>
               </button>
             );
           })}
+          </div>
         </div>
 
         {/* Mobile Grid - 2 rows, synchronized horizontal scroll */}
