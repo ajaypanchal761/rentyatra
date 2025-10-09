@@ -18,6 +18,7 @@ import Messages from './pages/Messages';
 function AppContent() {
   const location = useLocation();
   const hideNavbar = location.pathname.startsWith('/category/');
+  const hideFooter = location.pathname === '/' || location.pathname.startsWith('/category/');
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -38,7 +39,7 @@ function AppContent() {
           <Route path="/messages" element={<Messages />} />
         </Routes>
       </main>
-      {!hideNavbar && <Footer />}
+      {!hideFooter && <Footer />}
       <BottomNav />
     </div>
   );
