@@ -373,17 +373,6 @@ const Listings = () => {
           </div>
         )}
 
-        <style jsx>{`
-          .hide-scrollbar {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-          }
-          .hide-scrollbar::-webkit-scrollbar {
-            display: none;
-          }
-        `}</style>
-
-
         <div className="flex flex-col md:flex-row gap-6">
           {/* Sidebar Filters */}
           <div
