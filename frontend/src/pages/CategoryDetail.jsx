@@ -239,7 +239,7 @@ const CategoryDetail = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white flex flex-col">
+    <div className="min-h-screen bg-white flex flex-col overflow-x-hidden">
       {/* Header */}
       <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
         <div className="flex items-center h-14 px-4">
@@ -253,7 +253,7 @@ const CategoryDetail = () => {
         </div>
       </div>
 
-      <div className="flex flex-1">
+      <div className="flex flex-1 overflow-x-hidden">
         {/* Sidebar - Categories List */}
         <div className="w-20 md:w-24 bg-[#f0f4f7] border-r border-gray-200 overflow-y-auto flex-shrink-0">
           {categories.map((category) => (
@@ -279,7 +279,7 @@ const CategoryDetail = () => {
         </div>
 
         {/* Main Content */}
-        <div className="flex-1 overflow-y-auto pb-20 md:pb-4">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden pb-20 md:pb-4">
           {/* Banner Ad */}
           <div className="p-3 md:p-4">
             <div className="bg-gradient-to-r from-purple-600 to-purple-800 rounded-lg md:rounded-xl p-4 md:p-6 text-white">

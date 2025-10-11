@@ -106,12 +106,12 @@ const BookingCard = ({ item }) => {
   const days = calculateDays();
 
   return (
-    <div className="bg-white rounded-2xl border-2 border-gray-200 p-4 md:p-6 sticky top-20">
+    <div className="bg-white rounded-2xl border-2 border-gray-200 p-4 md:p-6">
       <div className="mb-4">
         <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-2">Book this item</h3>
         <div className="flex items-baseline gap-2">
           <span className="text-2xl md:text-3xl font-black text-blue-600">
-            ${item.pricePerDay || item.price}
+            ₹{item.pricePerDay || item.price}
           </span>
           <span className="text-sm text-gray-600">/day</span>
         </div>
@@ -119,10 +119,10 @@ const BookingCard = ({ item }) => {
         {/* Additional pricing info */}
         <div className="mt-2 text-xs text-gray-600 space-y-0.5">
           {item.pricePerWeek && (
-            <div>${item.pricePerWeek}/week • Save {Math.round((1 - (item.pricePerWeek / (item.pricePerDay * 7))) * 100)}%</div>
+            <div>₹{item.pricePerWeek}/week • Save {Math.round((1 - (item.pricePerWeek / (item.pricePerDay * 7))) * 100)}%</div>
           )}
           {item.pricePerMonth && (
-            <div>${item.pricePerMonth}/month • Save {Math.round((1 - (item.pricePerMonth / (item.pricePerDay * 30))) * 100)}%</div>
+            <div>₹{item.pricePerMonth}/month • Save {Math.round((1 - (item.pricePerMonth / (item.pricePerDay * 30))) * 100)}%</div>
           )}
         </div>
       </div>
@@ -174,7 +174,7 @@ const BookingCard = ({ item }) => {
           <div className="border-t border-blue-200 my-2 pt-2">
             <div className="flex justify-between items-center">
               <span className="font-bold text-gray-900">Total price</span>
-              <span className="text-2xl font-black text-blue-600">${totalPrice.toLocaleString()}</span>
+              <span className="text-2xl font-black text-blue-600">₹{totalPrice.toLocaleString()}</span>
             </div>
           </div>
         </div>

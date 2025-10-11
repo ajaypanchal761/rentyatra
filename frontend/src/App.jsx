@@ -21,9 +21,24 @@ import MySubscription from './pages/subscription/MySubscription';
 import MyBoosts from './pages/subscription/MyBoosts';
 import PaymentSuccess from './pages/subscription/PaymentSuccess';
 import PaymentFailed from './pages/subscription/PaymentFailed';
+import AdminDashboard from './pages/Admindashboard/AdminDashboard';
+
 
 function AppContent() {
   const location = useLocation();
+  const isAdminPage = location.pathname.startsWith('/admin');
+
+  // If it's an admin page, render it directly without any of the other app layout
+  if (isAdminPage) {
+    return (
+      <main>
+        <Routes>
+          <Route path="/admin" element={<AdminDashboard />} />
+        </Routes>
+      </main>
+    );
+  }
+  
   const hideNavbar = location.pathname.startsWith('/category/');
   const hideFooter = location.pathname === '/' || location.pathname.startsWith('/category/');
   

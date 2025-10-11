@@ -91,21 +91,15 @@ const MyBoosts = () => {
             </div>
             <Button
               onClick={() => navigate('/dashboard/my-ads')}
-              className="hidden md:flex items-center gap-2 bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white font-bold px-6 py-3 rounded-xl shadow-lg"
+              className="hidden md:flex items-center gap-2 bg-gradient-to-r from-blue-500 to-blue-400 hover:from-orange-100 hover:to-red-100 text-white font-semibold text-2xl px-6 py-3 rounded-xl shadow-lg"
             >
-              <Plus size={20} />
+              <Plus size={10} />
               <span>Boost Product</span>
             </Button>
           </div>
 
           {/* Mobile Boost Product Button */}
-          <Button
-            onClick={() => navigate('/dashboard/my-ads')}
-            className="md:hidden w-full flex items-center justify-center gap-2 bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white font-bold px-4 py-3 rounded-xl shadow-lg"
-          >
-            <Plus size={18} />
-            <span>Boost a Product</span>
-          </Button>
+         
         </div>
 
         {/* Active Boosts */}
@@ -228,7 +222,7 @@ const MyBoosts = () => {
                               </Button>
                               <Button
                                 onClick={() => openCancelModal(boost)}
-                                className="py-1.5 text-[10px] bg-white border-2 border-red-300 hover:border-red-400 hover:bg-red-50 text-red-600 font-bold rounded-md"
+                                className="py-1.5 text-[10px] bg-red text-black border-2 border-red-300 hover:border-red-400 hover:bg-red-50 text-red-600 font-bold rounded-md"
                               >
                                 Cancel
                               </Button>

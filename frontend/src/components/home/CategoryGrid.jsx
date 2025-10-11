@@ -85,7 +85,7 @@ const CategoryGrid = () => {
                         src={imageMap[category.image]}
                         alt={category.name}
                         className="object-contain group-hover:scale-105 transition-transform duration-200 w-full h-full"
-                        style={{ maxWidth: '75%', maxHeight: '75%' }}
+                        style={{ maxWidth: '90%', maxHeight: '90%' }}
                       />
                     </div>
                     
@@ -134,7 +134,7 @@ const CategoryGrid = () => {
                       src={imageMap[category.image]}
                       alt={category.name}
                       className="object-contain"
-                      style={{ width: '38px', height: '38px' }}
+                      style={{ width: '48px', height: '48px' }}
                     />
                   </div>
                   {/* Text Container - No background */}

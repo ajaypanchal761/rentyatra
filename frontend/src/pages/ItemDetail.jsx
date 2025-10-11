@@ -8,6 +8,8 @@ import Button from '../components/common/Button';
 import ReviewsSection from '../components/product/ReviewsSection';
 import StarRating from '../components/common/StarRating';
 import BookingCard from '../components/booking/BookingCard';
+import LocationMap from '../components/product/LocationMap';
+import ImageCarousel from '../components/common/ImageCarousel';
 import { format } from 'date-fns';
 
 const ItemDetail = () => {
@@ -16,6 +18,18 @@ const ItemDetail = () => {
   const { items, toggleFavorite, isFavorite, addToRecentlyViewed, getAverageRating, getReviewsCount } = useApp();
   const { isAuthenticated } = useAuth();
   const [selectedImage, setSelectedImage] = useState(0);
+  
+  // Create media array (video + images)
+  const getMediaArray = (item) => {
+    const media = [];
+    if (item.video) {
+      media.push({ type: 'video', src: item.video });
+    }
+    item.images.forEach(img => {
+      media.push({ type: 'image', src: img });
+    });
+    return media;
+  };
 
   const item = items.find((item) => item.id === Number(id));
 
@@ -37,13 +51,13 @@ const ItemDetail = () => {
     );
   }
 
-  const handleContactSeller = () => {
+  const handleContactOwner = () => {
     if (!isAuthenticated) {
       navigate('/login');
       return;
     }
     // In a real app, this would open a chat or messaging interface
-    alert('Opening chat with seller...');
+    alert('Opening chat with owner...');
   };
 
   const handleShare = () => {
@@ -81,27 +95,48 @@ const ItemDetail = () => {
           <div className="lg:col-span-2 space-y-3 md:space-y-6">
             {/* Image Gallery */}
             <Card className="overflow-hidden">
-              {/* Main Image */}
-              <div className="aspect-video bg-gray-200">
-                <img
-                  src={item.images[selectedImage]}
-                  alt={item.title}
-                  className="w-full h-full object-cover"
-                />
+              {/* Main Media Display */}
+              <div className="aspect-video bg-gray-200 relative">
+                {getMediaArray(item)[selectedImage]?.type === 'video' ? (
+                  <video
+                    src={getMediaArray(item)[selectedImage].src}
+                    className="w-full h-full object-cover"
+                    controls
+                  />
+                ) : (
+                  <img
+                    src={getMediaArray(item)[selectedImage]?.src || item.images[0]}
+                    alt={item.title}
+                    className="w-full h-full object-cover"
+                  />
+                )}
               </div>
 
-              {/* Thumbnail Images */}
-              {item.images.length > 1 && (
+              {/* Thumbnail Images + Video */}
+              {getMediaArray(item).length > 1 && (
                 <div className="flex gap-1.5 md:gap-2 p-2 md:p-4 overflow-x-auto hide-scrollbar">
-                  {item.images.map((image, index) => (
+                  {getMediaArray(item).map((media, index) => (
                     <button
                       key={index}
                       onClick={() => setSelectedImage(index)}
-                      className={`flex-shrink-0 w-14 h-14 md:w-20 md:h-20 rounded-lg overflow-hidden border-2 ${
-                        selectedImage === index ? 'border-blue-600' : 'border-transparent'
+                      className={`relative flex-shrink-0 w-14 h-14 md:w-20 md:h-20 rounded-lg overflow-hidden border-2 ${
+                        selectedImage === index ? 'border-blue-600' : 'border-transparent hover:border-gray-300'
                       }`}
                     >
-                      <img src={image} alt={`Thumbnail ${index + 1}`} className="w-full h-full object-cover" />
+                      {media.type === 'video' ? (
+                        <>
+                          <video src={media.src} className="w-full h-full object-cover" />
+                          <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                            <div className="w-6 h-6 md:w-8 md:h-8 bg-white/90 rounded-full flex items-center justify-center">
+                              <svg className="w-3 h-3 md:w-4 md:h-4 text-purple-600" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M8 5v14l11-7z"/>
+                              </svg>
+                            </div>
+                          </div>
+                        </>
+                      ) : (
+                        <img src={media.src} alt={`Thumbnail ${index + 1}`} className="w-full h-full object-cover" />
+                      )}
                     </button>
                   ))}
                 </div>
@@ -144,7 +179,7 @@ const ItemDetail = () => {
               <div className="mb-4 md:mb-6">
                 <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4 mb-2">
                   <span className="text-2xl md:text-3xl lg:text-4xl font-bold text-blue-600">
-                    ${item.price.toLocaleString()}
+                    ₹{item.price.toLocaleString()}
                   </span>
                   <span className="text-xs md:text-sm text-gray-500">/month</span>
                 </div>
@@ -175,7 +210,7 @@ const ItemDetail = () => {
                 </div>
                 <div className="bg-purple-50 rounded-lg p-2 md:p-3 text-center">
                   <Shield size={16} className="mx-auto mb-1 text-purple-600 md:w-5 md:h-5" />
-                  <p className="text-[10px] md:text-xs text-gray-600">Verified Seller</p>
+                  <p className="text-[10px] md:text-xs text-gray-600">Verified Owner</p>
                 </div>
                 <div className="bg-orange-50 rounded-lg p-2 md:p-3 text-center">
                   <Truck size={16} className="mx-auto mb-1 text-orange-600 md:w-5 md:h-5" />
@@ -216,24 +251,24 @@ const ItemDetail = () => {
             </Card>
           </div>
 
-          {/* Right Column - Booking & Seller Info */}
+          {/* Right Column - Booking & Owner Info */}
           <div className="space-y-3 md:space-y-6">
             {/* Booking Card */}
             <BookingCard item={item} />
             
-            {/* Seller Card */}
+            {/* Owner Card */}
             <Card className="p-3 md:p-6">
-              <h2 className="text-base md:text-lg lg:text-xl font-semibold mb-3 md:mb-4">Seller Information</h2>
+              <h2 className="text-base md:text-lg lg:text-xl font-semibold mb-3 md:mb-4">Owner Information</h2>
               
               <div className="flex items-center mb-3 md:mb-4">
                 <div className="w-12 h-12 md:w-16 md:h-16 bg-blue-600 rounded-full flex items-center justify-center text-white text-lg md:text-2xl font-bold flex-shrink-0">
-                  {item.seller.name.charAt(0)}
+                  {item.owner.name.charAt(0)}
                 </div>
                 <div className="ml-3 md:ml-4 min-w-0">
-                  <h3 className="font-semibold text-sm md:text-base lg:text-lg truncate">{item.seller.name}</h3>
+                  <h3 className="font-semibold text-sm md:text-base lg:text-lg truncate">{item.owner.name}</h3>
                   <div className="flex items-center">
                     <Star size={14} className="text-yellow-400 fill-yellow-400 md:w-4 md:h-4" />
-                    <span className="ml-1 text-xs md:text-sm text-gray-600">{item.seller.rating} Rating</span>
+                    <span className="ml-1 text-xs md:text-sm text-gray-600">{item.owner.rating} Rating</span>
                   </div>
                 </div>
               </div>
@@ -245,16 +280,16 @@ const ItemDetail = () => {
                 </div>
                 <div className="flex items-center text-xs md:text-sm text-gray-600">
                   <Mail size={14} className="mr-2 flex-shrink-0 md:w-4 md:h-4" />
-                  <span className="truncate">seller@example.com</span>
+                  <span className="truncate">owner@example.com</span>
                 </div>
               </div>
 
               <Button
                 icon={MessageCircle}
                 className="w-full mb-2 md:mb-3 text-sm md:text-base"
-                onClick={handleContactSeller}
+                onClick={handleContactOwner}
               >
-                Chat with Seller
+                Chat with Owner
               </Button>
               
               <Button
@@ -271,8 +306,34 @@ const ItemDetail = () => {
                   <li>• Meet in a safe, public place</li>
                   <li>• Check the item before renting</li>
                   <li>• Pay only after collecting item</li>
-                  <li>• Verify seller identity</li>
+                  <li>• Verify owner identity</li>
                 </ul>
+              </div>
+            </Card>
+
+            {/* Location Map Card */}
+            <Card className="p-3 md:p-6">
+              <div className="flex items-center gap-2 mb-3 md:mb-4">
+                <MapPin size={20} className="text-indigo-600 md:w-6 md:h-6" />
+                <h2 className="text-base md:text-lg lg:text-xl font-semibold">Location</h2>
+              </div>
+              
+              <div className="mb-3 md:mb-4">
+                <div className="flex items-center gap-2 text-sm md:text-base text-gray-700">
+                  <MapPin size={16} className="text-gray-500 flex-shrink-0 md:w-5 md:h-5" />
+                  <span className="font-medium">{item.location}</span>
+                </div>
+              </div>
+              
+              {/* Map Container */}
+              <div className="w-full h-48 md:h-64 lg:h-80">
+                <LocationMap location={item.location} title={item.title} />
+              </div>
+              
+              <div className="mt-3 md:mt-4 p-3 bg-yellow-50 rounded-lg">
+                <p className="text-[10px] md:text-xs text-yellow-800">
+                  <span className="font-semibold">Note:</span> This is an approximate location. Exact address will be shared after booking confirmation.
+                </p>
               </div>
             </Card>
           </div>
@@ -296,12 +357,12 @@ const ItemDetail = () => {
                   onClick={() => navigate(`/item/${relatedItem.id}`)}
                   className="bg-white rounded-xl overflow-hidden cursor-pointer premium-card border border-gray-100"
                 >
-                  {/* Image */}
+                  {/* Image Carousel */}
                   <div className="aspect-video bg-gray-100 overflow-hidden">
-                    <img
-                      src={relatedItem.images[0]}
-                      alt={relatedItem.title}
-                      className="w-full h-full object-cover"
+                    <ImageCarousel 
+                      images={relatedItem.images} 
+                      video={relatedItem.video}
+                      className="w-full h-full"
                     />
                   </div>
 
@@ -311,7 +372,7 @@ const ItemDetail = () => {
                       {relatedItem.title}
                     </h3>
                     <p className="text-blue-600 font-bold text-sm md:text-base mb-1">
-                      ${relatedItem.price.toLocaleString()}
+                      ₹{relatedItem.price.toLocaleString()}
                     </p>
                     <div className="flex items-center text-gray-500 text-[10px] md:text-xs">
                       <MapPin size={10} className="mr-1 flex-shrink-0 md:w-3 md:h-3" />

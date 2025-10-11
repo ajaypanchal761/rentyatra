@@ -1,14 +1,17 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MapPin, Heart } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 import Card from '../common/Card';
 import Button from '../common/Button';
 import StarRating from '../common/StarRating';
+import ImageCarousel from '../common/ImageCarousel';
 import { format } from 'date-fns';
 
 const FeaturedListings = () => {
   const { items, toggleFavorite, isFavorite, getAverageRating, getReviewsCount, setSelectedCategory } = useApp();
   const navigate = useNavigate();
+  const [animatingHeart, setAnimatingHeart] = useState(null);
 
   // Show all products in featured listings
   const featuredItems = items;
@@ -20,6 +23,10 @@ const FeaturedListings = () => {
   const handleFavoriteClick = (e, itemId) => {
     e.stopPropagation();
     toggleFavorite(itemId);
+    
+    // Trigger animation
+    setAnimatingHeart(itemId);
+    setTimeout(() => setAnimatingHeart(null), 600);
   };
 
   const handleViewAll = () => {
@@ -61,20 +68,24 @@ const FeaturedListings = () => {
                     {/* Favorite Button */}
                     <button
                       onClick={(e) => handleFavoriteClick(e, item.id)}
-                      className="absolute top-2 right-2 z-10 bg-white/90 backdrop-blur-sm p-1.5 sm:p-2.5 rounded-full shadow-lg hover:scale-110 transition-all hover:bg-white"
+                      className={`absolute top-2 right-2 z-10 bg-white/90 backdrop-blur-sm p-1.5 sm:p-2.5 rounded-full shadow-lg hover:scale-110 transition-all hover:bg-white ${
+                        animatingHeart === item.id ? 'heart-pulse' : ''
+                      }`}
                     >
                       <Heart
                         size={16}
-                        className={`sm:w-5 sm:h-5 ${isFavorite(item.id) ? 'fill-red-500 text-red-500' : 'text-gray-600'}`}
+                        className={`sm:w-5 sm:h-5 transition-all ${
+                          isFavorite(item.id) ? 'fill-red-500 text-red-500' : 'text-gray-600'
+                        } ${animatingHeart === item.id ? 'heart-animate' : ''}`}
                       />
                     </button>
 
-                    {/* Image */}
+                    {/* Image Carousel */}
                     <div className="aspect-video bg-gray-100 overflow-hidden">
-                      <img
-                        src={item.images[0]}
-                        alt={item.title}
-                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                      <ImageCarousel 
+                        images={item.images} 
+                        video={item.video}
+                        className="w-full h-full"
                       />
                     </div>
 
@@ -110,7 +121,7 @@ const FeaturedListings = () => {
                       
                       <div className="flex items-center justify-between mb-2 sm:mb-3">
                         <span className="text-base sm:text-xl md:text-2xl font-bold text-blue-600">
-                          ${item.price.toLocaleString()}
+                          ₹{item.price.toLocaleString()}
                         </span>
                       </div>
 

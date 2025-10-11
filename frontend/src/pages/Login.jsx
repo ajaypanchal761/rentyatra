@@ -1,243 +1,487 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Mail, Lock, Eye, EyeOff, ArrowRight, Sparkles, Shield, Zap } from 'lucide-react';
+import { Phone, Shield, Zap, Check, Send, Sparkles, Award, Users, TrendingUp } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import Button from '../components/common/Button';
+import OTPInput from '../components/auth/OTPInput';
+import ResendTimer from '../components/auth/ResendTimer';
+
+// Custom Arrow components
+const ArrowRight = ({ size, className }) => (
+  <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="5" y1="12" x2="19" y2="12"></line>
+    <polyline points="12 5 19 12 12 19"></polyline>
+  </svg>
+);
+
+const ArrowLeft = ({ size, className }) => (
+  <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="19" y1="12" x2="5" y2="12"></line>
+    <polyline points="12 19 5 12 12 5"></polyline>
+  </svg>
+);
 
 const Login = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
+  // Form data
+  const [phone, setPhone] = useState('');
+  
+  // OTP states
+  const [otpSent, setOtpSent] = useState(false);
+  const [otp, setOtp] = useState(['', '', '', '', '', '']);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [isSendingOTP, setIsSendingOTP] = useState(false);
+  
+  // UI states
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [isNewUser, setIsNewUser] = useState(false);
+  
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  // Check if user just signed up
+  useEffect(() => {
+    const pendingUser = localStorage.getItem('pendingUser');
+    if (pendingUser) {
+      setIsNewUser(true);
+      setSuccess('🎉 Account created! Please login with your credentials.');
+      // Clear the pending user after showing message
+      setTimeout(() => {
+        localStorage.removeItem('pendingUser');
+        setIsNewUser(false);
+      }, 5000);
+    }
+  }, []);
+
+  const handlePhoneChange = (e) => {
+    setPhone(e.target.value);
+    setError('');
+  };
+
+  // Validate phone number
+  const validatePhone = () => {
+    if (!phone.trim()) {
+      setError('Please enter your phone number');
+      return false;
+    }
+
+    if (!/^[\d\s\+\-\(\)]+$/.test(phone)) {
+      setError('Please enter a valid phone number');
+      return false;
+    }
+
+    return true;
+  };
+
+  // Send OTP (Mock implementation)
+  const handleSendOTP = async (e) => {
     e.preventDefault();
     setError('');
+    setSuccess('');
 
-    if (!email || !password) {
-      setError('Please fill in all fields');
+    if (!validatePhone()) return;
+
+    setIsSendingOTP(true);
+
+    // Mock API call - Replace with actual API call
+    setTimeout(() => {
+      // Simulate sending OTP
+      console.log(`📱 OTP sent to: ${phone}`);
+      
+      // In real implementation, backend will send OTP
+      // For demo, we'll use 123456 as OTP
+      console.log('🔑 Demo OTP: 123456');
+      
+      // Mask phone number for display
+      const maskedPhone = phone.replace(/(\d{2})(\d+)(\d{4})/, '$1*****$3');
+      
+      setOtpSent(true);
+      setSuccess(`OTP sent successfully to ${maskedPhone}`);
+      setIsSendingOTP(false);
+    }, 400);
+  };
+
+  // Resend OTP
+  const handleResendOTP = () => {
+    setError('');
+    setOtp(['', '', '', '', '', '']);
+    
+    // Mock API call
+    console.log('🔄 Resending OTP...');
+    setSuccess('OTP resent successfully!');
+    
+    // Clear success message after 3 seconds
+    setTimeout(() => setSuccess(''), 3000);
+  };
+
+  // Verify OTP and login
+  const handleVerifyOTP = async (e) => {
+    e.preventDefault();
+    setError('');
+    setSuccess('');
+
+    const otpValue = otp.join('');
+    
+    if (otpValue.length !== 6) {
+      setError('Please enter the complete 6-digit OTP');
       return;
     }
 
-    // Mock login - in real app, this would call an API
-    const userData = {
-      id: 1,
-      name: 'John Doe',
-      email,
-    };
+    setIsVerifying(true);
 
-    login(userData);
-    navigate('/');
+    // Mock API call - Replace with actual API call
+    setTimeout(() => {
+      // Mock OTP verification
+      // In real app, backend will verify the OTP and return user data
+      if (otpValue === '123456') {
+        // OTP verified successfully - Mock user data
+        const userData = {
+          id: Date.now(),
+          name: 'Demo User',
+          email: 'demo@example.com',
+          phone: phone,
+        };
+
+        login(userData);
+        setSuccess('Login successful! Redirecting...');
+        
+        setTimeout(() => {
+          navigate('/');
+        }, 800);
+      } else {
+        setError('Invalid OTP. Please try again or resend OTP. (Demo OTP: 123456)');
+        setIsVerifying(false);
+      }
+    }, 400);
+  };
+
+  // Auto-verify when all 6 digits are entered
+  const handleOTPChange = (newOTP) => {
+    setOtp(newOTP);
+    setError('');
+    
+    // Auto-verify if all 6 digits are filled
+    if (newOTP.every(digit => digit !== '') && !isVerifying) {
+      setTimeout(() => {
+        const otpValue = newOTP.join('');
+        if (otpValue.length === 6) {
+          handleVerifyOTP({ preventDefault: () => {} });
+        }
+      }, 200);
+    }
+  };
+
+  // Go back to phone input
+  const handleEditPhone = () => {
+    setOtpSent(false);
+    setOtp(['', '', '', '', '', '']);
+    setError('');
+    setSuccess('');
   };
 
   return (
-    <div className="min-h-screen flex flex-col md:flex-row">
-      {/* Left Side - Hero Section with Gradient */}
-      <div className="hidden md:flex md:w-1/2 lg:w-3/5 bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 p-12 flex-col justify-between relative overflow-hidden">
-        {/* Animated Background Blobs */}
-        <div className="absolute inset-0 opacity-20">
-          <div className="absolute top-0 -left-4 w-96 h-96 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl animate-blob"></div>
-          <div className="absolute top-0 -right-4 w-96 h-96 bg-yellow-500 rounded-full mix-blend-multiply filter blur-3xl animate-blob animation-delay-2000"></div>
-          <div className="absolute -bottom-8 left-20 w-96 h-96 bg-pink-500 rounded-full mix-blend-multiply filter blur-3xl animate-blob animation-delay-4000"></div>
+    <div className="min-h-screen flex flex-col md:flex-row md:bg-gradient-to-br md:from-slate-50 md:via-blue-50 md:to-indigo-100">
+      {/* Left Side - Hero Section */}
+      <div className="hidden md:flex md:w-1/2 lg:w-3/5 relative overflow-hidden">
+        {/* Animated Gradient Background */}
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-600 via-indigo-700 to-purple-900">
+          {/* Animated Orbs */}
+          <div className="absolute inset-0 overflow-hidden">
+            <div className="absolute -top-40 -left-40 w-80 h-80 bg-blue-400 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob"></div>
+            <div className="absolute -top-20 -right-20 w-80 h-80 bg-purple-400 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob animation-delay-2000"></div>
+            <div className="absolute -bottom-20 left-20 w-80 h-80 bg-pink-400 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob animation-delay-4000"></div>
+          </div>
+
+          {/* Grid Pattern Overlay */}
+          <div className="absolute inset-0 bg-grid-white/[0.05] bg-[size:40px_40px]"></div>
         </div>
 
         {/* Content */}
-        <div className="relative z-10">
-          <Link to="/" className="inline-block">
-            <div className="text-3xl font-black text-white mb-8">RentX</div>
-          </Link>
-          
-          <div className="space-y-6">
-            <h1 className="text-4xl lg:text-5xl xl:text-6xl font-black text-white leading-tight">
-              Welcome back to<br />
-              <span className="bg-gradient-to-r from-yellow-300 to-pink-300 bg-clip-text text-transparent">
-                RentX
-              </span>
-            </h1>
-            <p className="text-xl text-blue-100 leading-relaxed max-w-lg">
-              Your trusted marketplace for renting anything you need. Join thousands of happy renters today!
-            </p>
+        <div className="relative z-10 flex flex-col justify-between p-12 text-white">
+          {/* Logo & Header */}
+          <div>
+            <Link to="/" className="inline-block group">
+              <div className="flex items-center gap-3 mb-12">
+                <div className="w-12 h-12 bg-white/10 backdrop-blur-xl rounded-2xl flex items-center justify-center border border-white/20 group-hover:scale-110 transition-transform">
+                  <Sparkles className="text-white" size={28} />
+                </div>
+                <span className="text-3xl font-black">RentX</span>
+              </div>
+            </Link>
+            
+            <div className="space-y-6 max-w-lg">
+              <div className="inline-block">
+                <div className="flex items-center gap-2 bg-white/10 backdrop-blur-md px-4 py-2 rounded-full border border-white/20 mb-6">
+                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                  <span className="text-sm font-semibold">Secure OTP Login</span>
+                </div>
+              </div>
+              
+              <h1 className="text-5xl lg:text-6xl xl:text-7xl font-black leading-tight">
+                Welcome
+                <br />
+                <span className="bg-gradient-to-r from-cyan-200 via-blue-200 to-purple-200 bg-clip-text text-transparent">
+                  Back!
+                </span>
+              </h1>
+              
+              <p className="text-xl text-blue-100 leading-relaxed">
+                Login instantly with OTP. No passwords to remember - just verify and you're in!
+              </p>
+            </div>
+
+            {/* Feature Pills */}
+            <div className="mt-12 flex flex-wrap gap-3">
+              {[
+                { icon: Shield, text: 'Secure' },
+                { icon: Zap, text: 'Instant' },
+                { icon: Award, text: 'Trusted' },
+              ].map((feature, idx) => {
+                const Icon = feature.icon;
+                return (
+                  <div key={idx} className="flex items-center gap-2 bg-white/10 backdrop-blur-md px-4 py-2 rounded-full border border-white/20">
+                    <Icon size={16} />
+                    <span className="text-sm font-medium">{feature.text}</span>
+                  </div>
+                );
+              })}
+            </div>
           </div>
 
-          {/* Features */}
-          <div className="mt-12 space-y-4">
+          {/* Stats */}
+          <div className="grid grid-cols-3 gap-6">
             {[
-              { icon: Sparkles, text: 'Discover 50,000+ rental items' },
-              { icon: Shield, text: 'Secure and verified transactions' },
-              { icon: Zap, text: 'Rent in minutes, not hours' },
-            ].map((feature, idx) => {
-              const Icon = feature.icon;
+              { icon: Users, value: '50K+', label: 'Active Users' },
+              { icon: Award, value: '4.9★', label: 'Rating' },
+              { icon: TrendingUp, value: '₹10Cr+', label: 'Transactions' },
+            ].map((stat, idx) => {
+              const Icon = stat.icon;
               return (
-                <div key={idx} className="flex items-center gap-4 text-white">
-                  <div className="w-12 h-12 bg-white/10 backdrop-blur-md rounded-xl flex items-center justify-center">
-                    <Icon size={24} />
-                  </div>
-                  <span className="text-lg font-medium">{feature.text}</span>
+                <div key={idx} className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/20">
+                  <Icon className="mb-2 opacity-80" size={24} />
+                  <div className="text-2xl font-black">{stat.value}</div>
+                  <div className="text-xs text-blue-200">{stat.label}</div>
                 </div>
               );
             })}
           </div>
-        </div>
-
-        {/* Bottom Stats */}
-        <div className="relative z-10 grid grid-cols-3 gap-8">
-          {[
-            { label: 'Active Users', value: '100K+' },
-            { label: 'Rental Items', value: '50K+' },
-            { label: 'Cities', value: '40+' },
-          ].map((stat, idx) => (
-            <div key={idx} className="text-center">
-              <div className="text-3xl font-black text-white mb-1">{stat.value}</div>
-              <div className="text-sm text-blue-200">{stat.label}</div>
-            </div>
-          ))}
         </div>
       </div>
 
       {/* Right Side - Login Form */}
-      <div className="flex-1 flex items-center justify-center p-4 md:p-12 bg-gray-50">
-        <div className="w-full max-w-md">
-          {/* Mobile Logo */}
-          <Link to="/" className="md:hidden inline-block mb-4">
-            <div className="text-2xl md:text-3xl font-black bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-              RentX
-            </div>
-          </Link>
+      <div className="flex-1 flex items-center justify-center md:p-12 relative min-h-screen md:min-h-0">
+        {/* Mobile Full-Screen Background */}
+        <div className="md:hidden absolute inset-0 bg-gradient-to-br from-blue-500 via-indigo-600 to-purple-700">
+          {/* Animated Orbs for Mobile */}
+          <div className="absolute inset-0 overflow-hidden">
+            <div className="absolute -top-20 -left-20 w-64 h-64 bg-blue-400 rounded-full mix-blend-multiply filter blur-3xl opacity-50 animate-blob"></div>
+            <div className="absolute -bottom-20 -right-20 w-64 h-64 bg-purple-400 rounded-full mix-blend-multiply filter blur-3xl opacity-50 animate-blob animation-delay-2000"></div>
+          </div>
+        </div>
+        
+        <div className="w-full md:max-w-md relative z-10 h-full md:h-auto flex items-center">
+          {/* Form Container - Full Screen Mobile */}
+          <div className="w-full bg-white md:rounded-3xl md:shadow-2xl p-6 md:p-10 md:border border-gray-100 relative overflow-hidden min-h-screen md:min-h-0 flex flex-col justify-center">
+            {/* Decorative Gradient - Desktop Only */}
+            <div className="hidden md:block absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-500 to-purple-600 opacity-10 blur-3xl rounded-full"></div>
+            <div className="hidden md:block absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-indigo-500 to-pink-600 opacity-10 blur-3xl rounded-full"></div>
+            
+            <div className="relative z-10">
+              {/* Back Button - Mobile Only */}
+              <Link 
+                to="/" 
+                className="md:hidden inline-flex items-center gap-2 text-gray-700 hover:text-gray-900 font-semibold mb-6 group"
+              >
+                <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
+                <span className="text-sm">Back to Home</span>
+              </Link>
 
-          {/* Form Container */}
-          <div className="bg-white rounded-2xl shadow-2xl p-4 sm:p-6 md:p-10 border border-gray-100">
-            <div className="mb-4 md:mb-8">
-              <h2 className="text-xl sm:text-2xl md:text-4xl font-black text-gray-900 mb-1 md:mb-2">
-                Welcome Back!
-              </h2>
-              <p className="text-gray-600 text-sm md:text-base">
-                Please login to continue to your account
-              </p>
-            </div>
+              {/* Header */}
+              <div className="mb-5 md:mb-8">
+                <div className="hidden md:inline-flex items-center gap-2 bg-gradient-to-r from-blue-50 to-indigo-50 px-3 py-1.5 rounded-full mb-3 md:mb-4 border border-blue-200">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                  <span className="text-xs font-bold text-blue-700">
+                    {otpSent ? '🔐 Verification Step' : '🚀 Quick Login'}
+                  </span>
+                </div>
+                
+                <h2 className="text-2xl md:text-5xl font-black text-gray-900 mb-2 md:mb-3 leading-tight">
+                  {otpSent ? (
+                    <>
+                      Verify <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">OTP</span>
+                    </>
+                  ) : (
+                    <>
+                      Welcome <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">Back!</span>
+                    </>
+                  )}
+                </h2>
+                <p className="text-gray-600 text-sm md:text-base">
+                  {otpSent 
+                    ? 'Enter the code we sent to your phone' 
+                    : 'Login securely with OTP verification'
+                  }
+                </p>
+              </div>
 
-            <form onSubmit={handleSubmit} className="space-y-3 md:space-y-5">
+              {/* Error Message */}
               {error && (
-                <div className="p-3 md:p-4 bg-red-50 border-l-4 border-red-500 rounded-r-xl animate-slide-up">
-                  <p className="text-red-700 text-xs md:text-sm font-medium">{error}</p>
+                <div className="mb-4 p-3 md:p-4 bg-gradient-to-r from-red-50 to-pink-50 border border-red-200 rounded-xl animate-slide-up">
+                  <div className="flex items-start gap-2">
+                    <div className="w-5 h-5 bg-red-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <span className="text-white text-xs font-bold">!</span>
+                    </div>
+                    <p className="text-red-700 text-xs md:text-sm font-medium flex-1">{error}</p>
+                  </div>
                 </div>
               )}
 
-              {/* Email */}
-              <div className="space-y-1 md:space-y-2">
-                <label className="block text-xs md:text-sm font-semibold text-gray-700">
-                  Email Address
-                </label>
-                <div className="relative group">
-                  <Mail className="absolute left-3 md:left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-600 transition" size={16} />
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="you@example.com"
-                    className="w-full pl-9 md:pl-12 pr-3 md:pr-4 py-2.5 md:py-3.5 text-sm md:text-base border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-gray-900 placeholder:text-gray-400"
-                  />
+              {/* Success Message */}
+              {success && (
+                <div className="mb-4 p-3 md:p-4 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl animate-slide-up">
+                  <div className="flex items-start gap-2">
+                    <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <Check size={14} className="text-white" />
+                    </div>
+                    <p className="text-green-700 text-xs md:text-sm font-medium flex-1">{success}</p>
+                  </div>
                 </div>
-              </div>
+              )}
 
-              {/* Password */}
-              <div className="space-y-1 md:space-y-2">
-                <label className="block text-xs md:text-sm font-semibold text-gray-700">
-                  Password
-                </label>
-                <div className="relative group">
-                  <Lock className="absolute left-3 md:left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-600 transition" size={16} />
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Enter your password"
-                    className="w-full pl-9 md:pl-12 pr-10 md:pr-14 py-2.5 md:py-3.5 text-sm md:text-base border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-gray-900 placeholder:text-gray-400"
-                  />
+              {!otpSent ? (
+                /* Step 1: Enter Phone Number */
+                <form onSubmit={handleSendOTP} className="space-y-4 md:space-y-5">
+                  {/* Phone Number Input */}
+                  <div className="space-y-2">
+                    <label className="block text-sm md:text-base font-bold text-gray-800">
+                      Phone Number
+                    </label>
+                    <div className="relative group">
+                      <div className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                        <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center group-focus-within:scale-110 transition-transform">
+                          <Phone className="text-white" size={16} />
+                        </div>
+                      </div>
+                      <input
+                        type="tel"
+                        value={phone}
+                        onChange={handlePhoneChange}
+                        placeholder="+91 98765 43210"
+                        className="w-full pl-14 pr-4 py-3.5 md:py-4 text-sm md:text-base border-2 border-gray-200 rounded-xl md:rounded-2xl focus:ring-4 focus:ring-blue-200 focus:border-blue-500 outline-none transition-all text-gray-900 placeholder:text-gray-400 font-medium bg-gray-50 focus:bg-white"
+                        required
+                      />
+                    </div>
+                    <p className="text-xs text-gray-500 flex items-center gap-1.5 ml-1">
+                      <Shield size={12} className="text-blue-600" />
+                      OTP will be sent via SMS
+                    </p>
+                  </div>
+
+                  <Button 
+                    type="submit" 
+                    disabled={isSendingOTP}
+                    className="w-full py-3.5 md:py-4 text-base md:text-lg font-bold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg shadow-blue-500/50 hover:shadow-xl hover:shadow-blue-600/50 transition-all group rounded-xl md:rounded-2xl"
+                  >
+                    {isSendingOTP ? (
+                      <div className="flex items-center justify-center gap-2">
+                        <div className="w-5 h-5 border-3 border-white border-t-transparent rounded-full animate-spin"></div>
+                        <span>Sending OTP...</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-center gap-2">
+                        <Send size={18} className="group-hover:rotate-12 transition-transform" />
+                        <span>Send OTP</span>
+                        <ArrowRight className="ml-1 group-hover:translate-x-1 transition-transform" size={18} />
+                      </div>
+                    )}
+                  </Button>
+
+                  {/* Security Info */}
+                  <div className="flex items-center justify-center gap-2 pt-2">
+                    <Shield size={14} className="text-green-600" />
+                    <span className="text-xs text-gray-600 font-medium">Protected by 256-bit encryption</span>
+                  </div>
+                </form>
+              ) : (
+                /* Step 2: OTP Verification */
+                <form onSubmit={handleVerifyOTP} className="space-y-4 md:space-y-6">
+                  {/* OTP Input */}
+                  <div className="space-y-4">
+                    <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-4 md:p-6 border border-blue-200">
+                      <OTPInput
+                        length={6}
+                        value={otp}
+                        onChange={handleOTPChange}
+                        disabled={isVerifying}
+                      />
+                    </div>
+
+                    <div className="text-center space-y-2">
+                      <p className="text-sm md:text-base text-gray-700 font-medium">
+                        Enter the 6-digit verification code
+                      </p>
+                      <div className="inline-flex items-center gap-2 bg-gradient-to-r from-indigo-100 to-purple-100 px-4 py-2 rounded-full border border-indigo-200">
+                        <span className="text-xs text-indigo-700 font-bold">Demo OTP:</span>
+                        <span className="text-sm font-black text-indigo-900 font-mono">123456</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Resend Timer */}
+                  <div className="bg-gray-50 rounded-xl p-3 border border-gray-200">
+                    <ResendTimer
+                      initialTime={30}
+                      onResend={handleResendOTP}
+                      disabled={isVerifying}
+                    />
+                  </div>
+
+                  {/* Verify Button */}
+                  <Button
+                    type="submit"
+                    disabled={isVerifying || otp.join('').length !== 6}
+                    className="w-full py-3.5 md:py-4 text-base md:text-lg font-bold bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 hover:from-green-700 hover:to-teal-700 shadow-lg shadow-green-500/50 hover:shadow-xl hover:shadow-green-600/50 transition-all rounded-xl md:rounded-2xl"
+                  >
+                    {isVerifying ? (
+                      <div className="flex items-center justify-center gap-2">
+                        <div className="w-5 h-5 border-3 border-white border-t-transparent rounded-full animate-spin"></div>
+                        <span>Verifying...</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-center gap-2">
+                        <Check size={18} />
+                        <span>Verify & Login</span>
+                      </div>
+                    )}
+                  </Button>
+
+                  {/* Edit Phone */}
                   <button
                     type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 md:right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition"
+                    onClick={handleEditPhone}
+                    className="w-full text-sm text-gray-600 hover:text-gray-900 font-semibold transition py-2 hover:bg-gray-50 rounded-lg"
                   >
-                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    ← Change Phone Number
                   </button>
-                </div>
-              </div>
+                </form>
+              )}
 
-              <div className="flex items-center justify-between">
-                <label className="flex items-center cursor-pointer group">
-                  <input type="checkbox" className="w-3 h-3 md:w-4 md:h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer" />
-                  <span className="ml-1.5 md:ml-2 text-xs md:text-sm text-gray-600 group-hover:text-gray-900 transition">Remember me</span>
-                </label>
-                <Link to="/forgot-password" className="text-xs md:text-sm text-blue-600 hover:text-blue-700 font-semibold transition">
-                  Forgot password?
-                </Link>
-              </div>
-
-              <Button type="submit" className="w-full py-3 md:py-4 text-sm md:text-lg font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg hover:shadow-xl transition-all group">
-                Login to Continue
-                <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" size={16} />
-              </Button>
-            </form>
-
-            {/* Divider */}
-            <div className="my-4 md:my-8">
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-200"></div>
-                </div>
-                <div className="relative flex justify-center text-xs md:text-sm">
-                  <span className="px-3 md:px-4 bg-white text-gray-500 font-medium">Or continue with</span>
+              {/* Signup Link */}
+              <div className="mt-6 md:mt-8 pt-6 border-t border-gray-200">
+                <div className="text-center">
+                  <p className="text-gray-600 text-sm md:text-base mb-3">
+                    Don't have an account?
+                  </p>
+                  <Link 
+                    to="/signup" 
+                    className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold rounded-xl transition-all shadow-lg shadow-purple-500/50 hover:shadow-xl hover:scale-105 group"
+                  >
+                    <Sparkles size={16} className="group-hover:rotate-12 transition-transform" />
+                    <span>Create Account</span>
+                  </Link>
                 </div>
               </div>
             </div>
-
-            {/* Social Login */}
-            <div className="grid grid-cols-2 gap-2 md:gap-4">
-              <button className="flex items-center justify-center gap-2 md:gap-3 px-2 md:px-4 py-2 md:py-3 border-2 border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition font-medium text-gray-700 text-xs md:text-base">
-                <svg className="w-4 h-4 md:w-5 md:h-5" viewBox="0 0 24 24">
-                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-                </svg>
-                <span className="hidden sm:inline">Google</span>
-              </button>
-              <button className="flex items-center justify-center gap-2 md:gap-3 px-2 md:px-4 py-2 md:py-3 border-2 border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition font-medium text-gray-700 text-xs md:text-base">
-                <svg className="w-4 h-4 md:w-5 md:h-5" fill="#1877F2" viewBox="0 0 24 24">
-                  <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-                </svg>
-                <span className="hidden sm:inline">Facebook</span>
-              </button>
-            </div>
-
-            {/* Sign Up Link */}
-            <div className="mt-4 md:mt-8 text-center">
-              <p className="text-gray-600 text-xs md:text-base">
-                Don't have an account?{' '}
-                <Link to="/signup" className="text-blue-600 hover:text-blue-700 font-bold transition">
-                  Create Account
-                </Link>
-              </p>
-            </div>
-          </div>
-
-          {/* Mobile Features */}
-          <div className="md:hidden mt-4 space-y-2">
-            {[
-              { icon: Sparkles, text: '50,000+ rental items' },
-              { icon: Shield, text: 'Secure transactions' },
-              { icon: Zap, text: 'Rent in minutes' },
-            ].map((feature, idx) => {
-              const Icon = feature.icon;
-              return (
-                <div key={idx} className="flex items-center gap-2 text-gray-600">
-                  <Icon size={16} className="text-blue-600" />
-                  <span className="text-xs font-medium">{feature.text}</span>
-                </div>
-              );
-            })}
           </div>
         </div>
       </div>
@@ -246,4 +490,3 @@ const Login = () => {
 };
 
 export default Login;
-

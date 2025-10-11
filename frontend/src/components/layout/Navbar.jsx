@@ -8,10 +8,11 @@ import LocationSearch from '../home/LocationSearch';
 
 const Navbar = () => {
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showFavoritesDropdown, setShowFavoritesDropdown] = useState(false);
   const [showLocationMenu, setShowLocationMenu] = useState(false);
   const [currentCategoryIndex, setCurrentCategoryIndex] = useState(0);
   const { isAuthenticated, user, logout } = useAuth();
-  const { searchQuery, setSearchQuery, location } = useApp();
+  const { searchQuery, setSearchQuery, location, favorites, items, toggleFavorite } = useApp();
   const navigate = useNavigate();
 
   const categoryNames = ['Cars', 'Bikes', 'Mobiles', 'Properties', 'Jobs', 'Furniture', 'Electronics', 'Fashion'];
@@ -40,7 +41,7 @@ const Navbar = () => {
           <div className="flex items-center justify-between h-14">
             <Link to="/" className="flex items-center flex-shrink-0">
               <div className="text-2xl font-black tracking-tight">
-                <span className="text-[#002f34]">OLX</span>
+                <span className="text-[#002f34]">Rent Yatra</span>
               </div>
             </Link>
             <div className="relative">
@@ -84,13 +85,102 @@ const Navbar = () => {
                   </button>
                 </div>
               </form>
-              <Link 
-                to="/favorites" 
-                className="p-2 hover:bg-gray-100 rounded-full transition flex-shrink-0"
-                title="Favorites"
-              >
-                <Heart className="text-gray-700" size={22} />
-              </Link>
+              <div className="relative flex-shrink-0">
+                <button
+                  onClick={() => setShowFavoritesDropdown(!showFavoritesDropdown)}
+                  className="p-2 hover:bg-gray-100 rounded-full transition relative"
+                  title="Favorites"
+                >
+                  <Heart className="text-gray-700" size={22} />
+                  {favorites.length > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                      {favorites.length}
+                    </span>
+                  )}
+                </button>
+
+                {/* Favorites Dropdown */}
+                {showFavoritesDropdown && (
+                  <>
+                    <div 
+                      className="fixed inset-0 z-40" 
+                      onClick={() => setShowFavoritesDropdown(false)}
+                    ></div>
+                    <div className="absolute right-0 mt-2 w-80 md:w-96 bg-white rounded-xl shadow-2xl z-50 max-h-96 overflow-hidden border border-gray-200">
+                      <div className="bg-gradient-to-r from-red-500 to-pink-600 px-4 py-3 text-white">
+                        <h3 className="font-bold text-lg flex items-center gap-2">
+                          <Heart size={20} fill="currentColor" />
+                          My Favorites ({favorites.length})
+                        </h3>
+                      </div>
+                      
+                      <div className="max-h-80 overflow-y-auto">
+                        {favorites.length === 0 ? (
+                          <div className="p-8 text-center">
+                            <Heart size={48} className="mx-auto text-gray-300 mb-3" />
+                            <p className="text-gray-500 mb-2">No favorites yet</p>
+                            <p className="text-sm text-gray-400">Start adding items you love!</p>
+                          </div>
+                        ) : (
+                          <div className="divide-y divide-gray-100">
+                            {items.filter(item => favorites.includes(item.id)).map((item) => (
+                              <div
+                                key={item.id}
+                                className="p-3 hover:bg-gray-50 transition cursor-pointer flex gap-3"
+                                onClick={() => {
+                                  navigate(`/item/${item.id}`);
+                                  setShowFavoritesDropdown(false);
+                                }}
+                              >
+                                <img
+                                  src={item.images[0]}
+                                  alt={item.title}
+                                  className="w-16 h-16 object-cover rounded-lg flex-shrink-0"
+                                />
+                                <div className="flex-1 min-w-0">
+                                  <h4 className="font-semibold text-sm text-gray-900 line-clamp-1 mb-1">
+                                    {item.title}
+                                  </h4>
+                                  <p className="text-blue-600 font-bold text-sm">
+                                    ₹{item.price.toLocaleString()}
+                                  </p>
+                                  <p className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
+                                    <MapPin size={10} />
+                                    {item.location}
+                                  </p>
+                                </div>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    toggleFavorite(item.id);
+                                  }}
+                                  className="flex-shrink-0 p-1.5 hover:bg-red-50 rounded-full transition"
+                                >
+                                  <Heart size={16} className="fill-red-500 text-red-500" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {favorites.length > 0 && (
+                        <div className="border-t border-gray-200 p-3 bg-gray-50">
+                          <button
+                            onClick={() => {
+                              navigate('/dashboard/favorites');
+                              setShowFavoritesDropdown(false);
+                            }}
+                            className="w-full py-2 bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 text-white font-semibold rounded-lg transition-all"
+                          >
+                            View All Favorites
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
               <div className="relative flex-shrink-0">
                 <button
                   onClick={() => setShowNotifications(!showNotifications)}
@@ -127,7 +217,7 @@ const Navbar = () => {
           {/* Logo */}
           <Link to="/" className="flex items-center flex-shrink-0">
             <div className="text-3xl font-black tracking-tight">
-              <span className="text-[#002f34]">OLX</span>
+              <span className="text-[#002f34]">Rent Yatra</span>
             </div>
           </Link>
 
@@ -178,17 +268,106 @@ const Navbar = () => {
               to="/subscription" 
               className="px-3 py-1.5 text-sm font-semibold text-blue-600 hover:bg-blue-50 rounded-lg transition flex-shrink-0"
             >
-              Pricing
+              Plans
             </Link>
             
             {/* Heart Icon */}
-            <Link 
-              to="/favorites" 
-              className="p-2 hover:bg-gray-100 rounded-full transition flex-shrink-0"
-              title="Favorites"
-            >
-              <Heart className="text-gray-700" size={22} />
-            </Link>
+            <div className="relative flex-shrink-0">
+              <button
+                onClick={() => setShowFavoritesDropdown(!showFavoritesDropdown)}
+                className="p-2 hover:bg-gray-100 rounded-full transition relative"
+                title="Favorites"
+              >
+                <Heart className="text-gray-700" size={22} />
+                {favorites.length > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                    {favorites.length}
+                  </span>
+                )}
+              </button>
+
+              {/* Favorites Dropdown - Desktop */}
+              {showFavoritesDropdown && (
+                <>
+                  <div 
+                    className="fixed inset-0 z-40" 
+                    onClick={() => setShowFavoritesDropdown(false)}
+                  ></div>
+                  <div className="absolute right-0 mt-2 w-80 md:w-96 bg-white rounded-xl shadow-2xl z-50 max-h-96 overflow-hidden border border-gray-200">
+                    <div className="bg-gradient-to-r from-red-500 to-pink-600 px-4 py-3 text-white">
+                      <h3 className="font-bold text-lg flex items-center gap-2">
+                        <Heart size={20} fill="currentColor" />
+                        My Favorites ({favorites.length})
+                      </h3>
+                    </div>
+                    
+                    <div className="max-h-80 overflow-y-auto">
+                      {favorites.length === 0 ? (
+                        <div className="p-8 text-center">
+                          <Heart size={48} className="mx-auto text-gray-300 mb-3" />
+                          <p className="text-gray-500 mb-2">No favorites yet</p>
+                          <p className="text-sm text-gray-400">Start adding items you love!</p>
+                        </div>
+                      ) : (
+                        <div className="divide-y divide-gray-100">
+                          {items.filter(item => favorites.includes(item.id)).map((item) => (
+                            <div
+                              key={item.id}
+                              className="p-3 hover:bg-gray-50 transition cursor-pointer flex gap-3"
+                              onClick={() => {
+                                navigate(`/item/${item.id}`);
+                                setShowFavoritesDropdown(false);
+                              }}
+                            >
+                              <img
+                                src={item.images[0]}
+                                alt={item.title}
+                                className="w-16 h-16 object-cover rounded-lg flex-shrink-0"
+                              />
+                              <div className="flex-1 min-w-0">
+                                <h4 className="font-semibold text-sm text-gray-900 line-clamp-1 mb-1">
+                                  {item.title}
+                                </h4>
+                                <p className="text-blue-600 font-bold text-sm">
+                                  ₹{item.price.toLocaleString()}
+                                </p>
+                                <p className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
+                                  <MapPin size={10} />
+                                  {item.location}
+                                </p>
+                              </div>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleFavorite(item.id);
+                                }}
+                                className="flex-shrink-0 p-1.5 hover:bg-red-50 rounded-full transition"
+                              >
+                                <Heart size={16} className="fill-red-500 text-red-500" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {favorites.length > 0 && (
+                      <div className="border-t border-gray-200 p-3 bg-gray-50">
+                        <button
+                          onClick={() => {
+                            navigate('/dashboard/favorites');
+                            setShowFavoritesDropdown(false);
+                          }}
+                          className="w-full py-2 bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 text-white font-semibold rounded-lg transition-all"
+                        >
+                          View All Favorites
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
 
             {/* Notification Icon */}
             <div className="relative flex-shrink-0">
@@ -266,7 +445,7 @@ const Navbar = () => {
                   onClick={() => navigate('/post-ad')} 
                   className="bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-gray-900 font-bold shadow-md px-4 py-1.5 text-sm"
                 >
-                  SELL
+                  RENT OUT
                 </Button>
               </>
             ) : (

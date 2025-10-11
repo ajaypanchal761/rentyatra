@@ -16,7 +16,7 @@ export const SubscriptionProvider = ({ children }) => {
     {
       id: 'starter',
       name: 'Starter',
-      price: 199,
+      price: 999,
       duration: 30,
       features: [
         'Up to 3 Listings',
@@ -33,7 +33,7 @@ export const SubscriptionProvider = ({ children }) => {
     {
       id: 'basic',
       name: 'Basic',
-      price: 499,
+      price: 2499,
       duration: 60,
       features: [
         'Up to 10 Listings',
@@ -51,7 +51,7 @@ export const SubscriptionProvider = ({ children }) => {
     {
       id: 'premium',
       name: 'Premium',
-      price: 899,
+      price: 4999,
       duration: 90,
       features: [
         'Up to 30 Listings',
@@ -70,7 +70,7 @@ export const SubscriptionProvider = ({ children }) => {
     {
       id: 'pro',
       name: 'Pro',
-      price: 1499,
+      price: 7999,
       duration: 365,
       features: [
         'Unlimited Listings',
@@ -95,7 +95,7 @@ export const SubscriptionProvider = ({ children }) => {
       id: 'boost-15',
       name: '15-Day Boost',
       duration: 15,
-      price: 99,
+      price: 499,
       description: 'Quick visibility boost',
       features: [
         'Top placement for 15 days',
@@ -111,7 +111,7 @@ export const SubscriptionProvider = ({ children }) => {
       id: 'boost-30',
       name: '30-Day Boost',
       duration: 30,
-      price: 149,
+      price: 799,
       description: 'Maximum exposure & best value',
       features: [
         'Top placement for 30 days',
@@ -119,7 +119,7 @@ export const SubscriptionProvider = ({ children }) => {
         'Priority badge on listing',
         'Featured in search',
         'Featured in category',
-        'Save ₹49 vs 15-day'
+        'Save ₹300 vs 15-day'
       ],
       icon: '🚀',
       gradient: 'from-blue-500 to-purple-600',

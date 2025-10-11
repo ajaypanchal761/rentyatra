@@ -168,7 +168,7 @@ const BoostModal = ({ isOpen, onClose, product }) => {
                 <div className="font-bold text-blue-900 mb-1">💡 Pro Tip</div>
                 <p className="text-sm text-blue-800">
                   30-day boost has <span className="font-bold">2.5x better ROI</span> and
-                  reaches more potential customers. Most sellers see bookings within 48 hours!
+                  reaches more potential renters. Most owners see bookings within 48 hours!
                 </p>
               </div>
             </div>

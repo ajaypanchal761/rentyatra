@@ -29,7 +29,7 @@ const Messages = () => {
           <MessageCircle size={64} className="mx-auto text-gray-400 mb-4" />
           <h3 className="text-xl font-semibold mb-2">No messages yet</h3>
           <p className="text-gray-600 mb-6">
-            Your conversations with buyers and sellers will appear here
+            Your conversations with renters and owners will appear here
           </p>
           <Button onClick={() => navigate('/listings')}>Browse Listings</Button>
         </Card>
