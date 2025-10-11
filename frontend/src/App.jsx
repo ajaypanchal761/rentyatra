@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-route
 import { AuthProvider } from './contexts/AuthContext';
 import { AppProvider } from './contexts/AppContext';
 import { SubscriptionProvider } from './contexts/SubscriptionContext';
+import { CategoryProvider } from './contexts/CategoryContext';
 import ScrollToTop from './components/common/ScrollToTop';
 import Navbar from './components/layout/Navbar';
 import Footer from './components/layout/Footer';
@@ -90,11 +91,13 @@ function App() {
     <Router>
       <ScrollToTop />
       <AuthProvider>
-        <AppProvider>
-          <SubscriptionProvider>
-            <AppContent />
-          </SubscriptionProvider>
-        </AppProvider>
+        <CategoryProvider>
+          <AppProvider>
+            <SubscriptionProvider>
+              <AppContent />
+            </SubscriptionProvider>
+          </AppProvider>
+        </CategoryProvider>
       </AuthProvider>
     </Router>
   );

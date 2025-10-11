@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react';
+import { useCategories } from './CategoryContext';
 
 const AppContext = createContext(null);
 
@@ -11,35 +12,21 @@ export const useApp = () => {
 };
 
 export const AppProvider = ({ children }) => {
+  // Get dynamic categories from CategoryContext
+  const { categories: dynamicCategories } = useCategories();
+  
   const [items, setItems] = useState([]);
   const [favorites, setFavorites] = useState([]);
   const [recentlyViewed, setRecentlyViewed] = useState([]);
   const [reviews, setReviews] = useState([]);
   const [bookings, setBookings] = useState([]);
-  const [categories, setCategories] = useState([
-    { id: 1, name: 'Cars', icon: 'Car', slug: 'cars', image: 'car.png' },
-    { id: 2, name: 'Mobiles', icon: 'Laptop', slug: 'mobiles', image: 'mobile.png' },
-    { id: 3, name: 'Bikes', icon: 'Bike', slug: 'bikes', image: 'bike.png' },
-    { id: 4, name: 'Furniture', icon: 'Armchair', slug: 'furniture', image: 'furniture.png' },
-    { id: 5, name: 'Fashion', icon: 'Shirt', slug: 'fashion', image: 'fashion.png' },
-    { id: 6, name: 'Books', icon: 'Book', slug: 'books', image: 'book.png' },
-    { id: 7, name: 'Electronics', icon: 'Home', slug: 'electronics', image: 'mobile.png' },
-    { id: 8, name: 'Pets', icon: 'Heart', slug: 'pets', image: 'pet.png' },
-    { id: 9, name: 'Sports', icon: 'Dumbbell', slug: 'sports', image: 'sport.png' },
-    { id: 10, name: 'Properties', icon: 'Home', slug: 'properties', image: 'realstate.png' },
-    { id: 11, name: 'Cameras', icon: 'Camera', slug: 'cameras', image: 'mobile.png' },
-    { id: 12, name: 'Gaming', icon: 'Gamepad', slug: 'gaming', image: 'mobile.png' },
-    { id: 13, name: 'Tools', icon: 'Wrench', slug: 'tools', image: 'sport.png' },
-    { id: 14, name: 'Music', icon: 'Music', slug: 'music', image: 'book.png' },
-    { id: 15, name: 'Party', icon: 'Gift', slug: 'party', image: 'fashion.png' },
-    { id: 16, name: 'Appliances', icon: 'Home', slug: 'appliances', image: 'furniture.png' },
-    { id: 17, name: 'Travel Gear', icon: 'Luggage', slug: 'travel', image: 'fashion.png' },
-    { id: 18, name: 'Drones', icon: 'Drone', slug: 'drones', image: 'mobile.png' },
-  ]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [priceRange, setPriceRange] = useState({ min: 0, max: 50000 });
   const [location, setLocation] = useState('');
+  
+  // Use dynamic categories from CategoryContext
+  const categories = dynamicCategories;
 
   // Load favorites, recently viewed, reviews, and bookings from localStorage
   useEffect(() => {

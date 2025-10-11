@@ -1,15 +1,22 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Upload, X, MapPin } from 'lucide-react';
+import { Upload, X, MapPin, ArrowLeft, ArrowRight, Check, ChevronRight } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
 import { useAuth } from '../contexts/AuthContext';
+import { useCategories } from '../contexts/CategoryContext';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
 
 const PostAd = () => {
-  const { categories, addItem } = useApp();
+  const { addItem } = useApp();
+  const { categories, imageMap } = useCategories();
   const { isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
+
+  // Multi-step state
+  const [currentStep, setCurrentStep] = useState(1); // 1: Category, 2: Subcategory, 3: Details
+  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [selectedSubcategory, setSelectedSubcategory] = useState(null);
 
   const [formData, setFormData] = useState({
     title: '',
@@ -17,7 +24,6 @@ const PostAd = () => {
     pricePerDay: '',
     pricePerWeek: '',
     pricePerMonth: '',
-    category: '',
     location: '',
     condition: 'good',
     availableFrom: '',
@@ -26,6 +32,9 @@ const PostAd = () => {
   const [images, setImages] = useState([]);
   const [video, setVideo] = useState(null);
   const [error, setError] = useState('');
+
+  // Get subcategories dynamically from selected category
+  const subcategories = selectedCategory?.subcategories || [];
 
   if (!isAuthenticated) {
     return (
@@ -39,6 +48,17 @@ const PostAd = () => {
     );
   }
 
+  const handleCategorySelect = (category) => {
+    setSelectedCategory(category);
+    setCurrentStep(2);
+  };
+
+  const handleSubcategorySelect = (subcategory) => {
+    setSelectedSubcategory(subcategory);
+    setFormData({ ...formData, category: selectedCategory.slug, subcategory: subcategory.name });
+    setCurrentStep(3);
+  };
+
   const handleChange = (e) => {
     setFormData({
       ...formData,
@@ -48,6 +68,13 @@ const PostAd = () => {
 
   const handleImageUpload = (e) => {
     const files = Array.from(e.target.files);
+    
+    // Limit to 4 images minimum requirement
+    if (images.length + files.length < 4) {
+      setError('Please upload at least 4 images');
+    } else {
+      setError('');
+    }
     
     files.forEach((file) => {
       const reader = new FileReader();
@@ -59,13 +86,16 @@ const PostAd = () => {
   };
 
   const removeImage = (index) => {
-    setImages(images.filter((_, i) => i !== index));
+    const newImages = images.filter((_, i) => i !== index);
+    setImages(newImages);
+    if (newImages.length < 4) {
+      setError('Please upload at least 4 images');
+    }
   };
 
   const handleVideoUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
-      // Check file size (max 50MB)
       if (file.size > 50 * 1024 * 1024) {
         setError('Video file size should be less than 50MB');
         return;
@@ -77,7 +107,7 @@ const PostAd = () => {
           file: file,
           preview: reader.result,
           name: file.name,
-          size: (file.size / (1024 * 1024)).toFixed(2) // Size in MB
+          size: (file.size / (1024 * 1024)).toFixed(2)
         });
       };
       reader.readAsDataURL(file);
@@ -92,13 +122,13 @@ const PostAd = () => {
     e.preventDefault();
     setError('');
 
-    if (!formData.title || !formData.description || !formData.category || !formData.location) {
+    if (!formData.title || !formData.description || !formData.location) {
       setError('Please fill in all required fields');
       return;
     }
 
     if (!formData.pricePerDay && !formData.pricePerWeek && !formData.pricePerMonth) {
-      setError('Please provide at least one rental price (per day, week, or month)');
+      setError('Please specify at least one rental price');
       return;
     }
 
@@ -107,20 +137,28 @@ const PostAd = () => {
       return;
     }
 
+    if (!video) {
+      setError('Please upload a video');
+      return;
+    }
+
     const newItem = {
+      id: Date.now(),
       ...formData,
-      price: Number(formData.pricePerDay || formData.pricePerWeek || formData.pricePerMonth),
-      rentalPricing: {
-        daily: formData.pricePerDay ? Number(formData.pricePerDay) : null,
-        weekly: formData.pricePerWeek ? Number(formData.pricePerWeek) : null,
-        monthly: formData.pricePerMonth ? Number(formData.pricePerMonth) : null,
-      },
-      images,
-      video: video ? video.preview : null,
+      price: Number(formData.pricePerMonth || formData.pricePerWeek || formData.pricePerDay),
+      pricePerDay: Number(formData.pricePerDay),
+      pricePerWeek: Number(formData.pricePerWeek),
+      pricePerMonth: Number(formData.pricePerMonth),
+      images: images,
+      video: video.preview,
+      subcategory: selectedSubcategory?.name || '',
       owner: {
         name: user.name,
-        rating: 4.5,
+        avatar: user.avatar,
       },
+      postedDate: new Date().toISOString(),
+      rating: 0,
+      reviews: [],
     };
 
     addItem(newItem);
@@ -128,147 +166,147 @@ const PostAd = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4 pb-20 md:pb-8">
-      <div className="max-w-3xl mx-auto">
-        <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-6 md:mb-8">List Your Item for Rent</h1>
-
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {error && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
-              {error}
-            </div>
-          )}
-
-          {/* Images Upload */}
-          <Card className="p-4 md:p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg md:text-xl font-semibold">Upload Photos *</h2>
-              <span className={`text-sm font-semibold px-3 py-1 rounded-full ${
-                images.length >= 4 
-                  ? 'bg-green-100 text-green-700' 
-                  : 'bg-red-100 text-red-700'
-              }`}>
-                {images.length}/10 images
-              </span>
-            </div>
-            
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 md:gap-4 mb-4">
-              {images.map((image, index) => (
-                <div key={index} className="relative aspect-square">
-                  {index === 0 && (
-                    <div className="absolute top-2 left-2 bg-blue-600 text-white text-xs font-bold px-2 py-1 rounded z-10">
-                      Cover
-                    </div>
-                  )}
-                  <img
-                    src={image}
-                    alt={`Upload ${index + 1}`}
-                    className="w-full h-full object-cover rounded-lg border-2 border-gray-200"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => removeImage(index)}
-                    className="absolute -top-2 -right-2 bg-red-500 text-white p-1.5 rounded-full hover:bg-red-600 shadow-lg transition-transform hover:scale-110"
-                  >
-                    <X size={16} />
-                  </button>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 py-3 md:py-6 px-3 md:px-4 pb-24 md:pb-6">
+      <div className="max-w-4xl mx-auto">
+        {/* Progress Steps */}
+        <div className="mb-4 md:mb-8">
+          <div className="flex items-center justify-center gap-1 md:gap-4">
+            {[
+              { step: 1, label: 'Category' },
+              { step: 2, label: 'Subcategory' },
+              { step: 3, label: 'Details' }
+            ].map((item, index) => (
+              <div key={item.step} className="flex items-center">
+                <div className="flex flex-col items-center">
+                  <div className={`w-8 h-8 md:w-12 md:h-12 rounded-full flex items-center justify-center text-sm md:text-base font-bold transition-all ${
+                    currentStep > item.step
+                      ? 'bg-green-500 text-white'
+                      : currentStep === item.step
+                      ? 'bg-blue-600 text-white shadow-lg md:scale-110'
+                      : 'bg-gray-200 text-gray-500'
+                  }`}>
+                    {currentStep > item.step ? <Check size={14} className="md:w-5 md:h-5" /> : item.step}
+                  </div>
+                  <span className={`text-[10px] md:text-sm font-semibold mt-1 md:mt-2 ${
+                    currentStep >= item.step ? 'text-gray-900' : 'text-gray-500'
+                  }`}>
+                    {item.label}
+                  </span>
                 </div>
-              ))}
+                {index < 2 && (
+                  <div className={`w-8 md:w-20 h-0.5 md:h-1 mx-1 md:mx-2 rounded-full transition-all ${
+                    currentStep > item.step ? 'bg-green-500' : 'bg-gray-200'
+                  }`}></div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
 
-              {/* Upload Button */}
-              {images.length < 10 && (
-                <label className="aspect-square border-2 border-dashed border-blue-300 bg-blue-50 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-blue-500 hover:bg-blue-100 transition">
-                  <Upload className="text-blue-500 mb-2" size={32} />
-                  <span className="text-xs font-semibold text-blue-600">Add Photo</span>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    onChange={handleImageUpload}
-                    className="hidden"
-                  />
-                </label>
-              )}
+        {/* Step 1: Category Selection */}
+        {currentStep === 1 && (
+          <Card className="p-4 md:p-8">
+            <div className="mb-4 md:mb-6">
+              <h2 className="text-lg md:text-3xl font-black text-gray-900 mb-1 md:mb-2">Select Category</h2>
+              <p className="text-xs md:text-base text-gray-600">Choose the category that best fits your item</p>
             </div>
-            
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-              <p className="text-sm text-yellow-800">
-                📸 <strong>Minimum 4 photos required</strong> • Maximum 10 photos • First photo will be the cover image
-              </p>
+
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2 md:gap-4">
+              {categories.map((category) => (
+                <button
+                  key={category.id}
+                  onClick={() => handleCategorySelect(category)}
+                  className="group bg-white border-2 border-gray-200 rounded-xl md:rounded-2xl p-3 md:p-6 hover:border-blue-500 hover:shadow-lg transition-all"
+                >
+                  <div className="w-12 h-12 md:w-20 md:h-20 mx-auto mb-2 md:mb-3 bg-gray-100 rounded-xl md:rounded-2xl flex items-center justify-center p-2 md:p-3 group-hover:bg-blue-50 transition-all">
+                    <img
+                      src={imageMap[category.image]}
+                      alt={category.name}
+                      className="w-full h-full object-contain group-hover:scale-110 transition-transform"
+                    />
+                  </div>
+                  <h3 className="font-bold text-xs md:text-base text-gray-900 group-hover:text-blue-600 transition-colors">
+                    {category.name}
+                  </h3>
+                </button>
+              ))}
             </div>
           </Card>
+        )}
 
-          {/* Video Upload */}
-          <Card className="p-4 md:p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg md:text-xl font-semibold">Upload Video (Optional)</h2>
-              {video && (
-                <span className="text-sm font-semibold px-3 py-1 rounded-full bg-green-100 text-green-700">
-                  {video.size} MB
-                </span>
-              )}
+        {/* Step 2: Subcategory Selection */}
+        {currentStep === 2 && (
+          <Card className="p-4 md:p-8">
+            <div className="mb-4 md:mb-6">
+              <button
+                onClick={() => setCurrentStep(1)}
+                className="flex items-center gap-1.5 text-gray-600 hover:text-gray-900 font-semibold mb-3 md:mb-4 group"
+              >
+                <ArrowLeft size={16} className="md:w-[18px] md:h-[18px] group-hover:-translate-x-1 transition-transform" />
+                <span className="text-xs md:text-sm">Back to Categories</span>
+              </button>
+              <h2 className="text-lg md:text-3xl font-black text-gray-900 mb-1 md:mb-2">
+                Select Subcategory
+              </h2>
+              <p className="text-xs md:text-base text-gray-600">
+                Refine your listing in <span className="font-bold text-blue-600">{selectedCategory?.name}</span>
+              </p>
             </div>
 
-            {!video ? (
-              <label className="border-2 border-dashed border-purple-300 bg-purple-50 rounded-lg p-8 flex flex-col items-center justify-center cursor-pointer hover:border-purple-500 hover:bg-purple-100 transition">
-                <div className="w-16 h-16 bg-purple-200 rounded-full flex items-center justify-center mb-3">
-                  <svg className="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                  </svg>
-                </div>
-                <span className="text-sm font-semibold text-purple-700 mb-1">Upload Product Video</span>
-                <span className="text-xs text-purple-600">MP4, MOV, AVI (Max 50MB)</span>
-                <input
-                  type="file"
-                  accept="video/*"
-                  onChange={handleVideoUpload}
-                  className="hidden"
-                />
-              </label>
-            ) : (
-              <div className="relative bg-gray-100 rounded-lg p-4">
-                <div className="flex items-start gap-4">
-                  <div className="flex-shrink-0">
-                    <div className="w-32 h-32 bg-purple-200 rounded-lg overflow-hidden">
-                      <video
-                        src={video.preview}
-                        className="w-full h-full object-cover"
-                        controls
-                      />
-                    </div>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h4 className="font-semibold text-gray-900 mb-1 truncate">{video.name}</h4>
-                    <p className="text-sm text-gray-600">Size: {video.size} MB</p>
-                    <p className="text-xs text-gray-500 mt-2">Video preview will be shown to potential renters</p>
-                  </div>
+            {subcategories.length > 0 ? (
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2 md:gap-4">
+                {subcategories.map((subcat, index) => (
                   <button
-                    type="button"
-                    onClick={removeVideo}
-                    className="flex-shrink-0 bg-red-500 text-white p-2 rounded-full hover:bg-red-600 transition-transform hover:scale-110"
+                    key={index}
+                    onClick={() => handleSubcategorySelect(subcat)}
+                    className="bg-white border-2 border-gray-200 rounded-xl md:rounded-2xl p-3 md:p-6 hover:border-blue-500 hover:shadow-lg transition-all group"
                   >
-                    <X size={18} />
+                    <div className="text-2xl md:text-5xl mb-1.5 md:mb-3">{subcat.icon}</div>
+                    <h3 className="font-bold text-xs md:text-base text-gray-900 group-hover:text-blue-600 transition-colors">
+                      {subcat.name}
+                    </h3>
                   </button>
-                </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-6 md:py-8">
+                <p className="text-xs md:text-base text-gray-600 mb-3 md:mb-4">No subcategories available for this category</p>
+                <Button onClick={() => { setSelectedSubcategory({ name: 'General' }); setCurrentStep(3); }}>
+                  Continue Without Subcategory
+                </Button>
               </div>
             )}
-            
-            <div className="mt-3 bg-blue-50 border border-blue-200 rounded-lg p-3">
-              <p className="text-xs text-blue-800">
-                🎥 <strong>Pro Tip:</strong> Videos get 3x more inquiries! Show your item in action, highlight features, and build trust.
+          </Card>
+        )}
+
+        {/* Step 3: Product Details Form */}
+        {currentStep === 3 && (
+          <Card className="p-4 md:p-8">
+            <div className="mb-4 md:mb-6">
+              <button
+                onClick={() => setCurrentStep(2)}
+                className="flex items-center gap-1.5 text-gray-600 hover:text-gray-900 font-semibold mb-3 md:mb-4 group"
+              >
+                <ArrowLeft size={16} className="md:w-[18px] md:h-[18px] group-hover:-translate-x-1 transition-transform" />
+                <span className="text-xs md:text-sm">Back to Subcategories</span>
+              </button>
+              <h2 className="text-lg md:text-3xl font-black text-gray-900 mb-1 md:mb-2">Product Details</h2>
+              <p className="text-xs md:text-base text-gray-600">
+                {selectedCategory?.name} → <span className="font-bold text-blue-600">{selectedSubcategory?.name}</span>
               </p>
             </div>
-          </Card>
 
-          {/* Basic Information */}
-          <Card className="p-4 md:p-6">
-            <h2 className="text-lg md:text-xl font-semibold mb-4">Item Details</h2>
-            
-            <div className="space-y-4">
+            {error && (
+              <div className="mb-4 md:mb-6 p-3 md:p-4 bg-red-50 border-l-4 border-red-500 rounded-r-lg">
+                <p className="text-red-700 text-xs md:text-sm font-medium">{error}</p>
+              </div>
+            )}
+
+            <form onSubmit={handleSubmit} className="space-y-4 md:space-y-6">
               {/* Title */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Item Title *
+                <label className="block text-xs md:text-sm font-bold text-gray-700 mb-1.5 md:mb-2">
+                  Title *
                 </label>
                 <input
                   type="text"
@@ -276,84 +314,109 @@ const PostAd = () => {
                   value={formData.title}
                   onChange={handleChange}
                   placeholder="e.g., Canon EOS R6 Camera"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  className="w-full px-3 md:px-4 py-2 md:py-3 text-sm md:text-base border-2 border-gray-200 rounded-lg md:rounded-xl focus:ring-2 md:focus:ring-4 focus:ring-blue-200 focus:border-blue-500 outline-none transition-all"
+                  required
                 />
-              </div>
-
-              {/* Category */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Category *
-                </label>
-                <select
-                  name="category"
-                  value={formData.category}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                >
-                  <option value="">Select a category</option>
-                  {categories.map((cat) => (
-                    <option key={cat.id} value={cat.slug}>
-                      {cat.name}
-                    </option>
-                  ))}
-                </select>
               </div>
 
               {/* Description */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs md:text-sm font-bold text-gray-700 mb-1.5 md:mb-2">
                   Description *
                 </label>
                 <textarea
                   name="description"
                   value={formData.description}
                   onChange={handleChange}
-                  placeholder="Describe your item, its condition, and any rental terms..."
-                  rows={6}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none"
+                  rows="3"
+                  placeholder="Describe your item in detail..."
+                  className="w-full px-3 md:px-4 py-2 md:py-3 text-sm md:text-base border-2 border-gray-200 rounded-lg md:rounded-xl focus:ring-2 md:focus:ring-4 focus:ring-blue-200 focus:border-blue-500 outline-none transition-all resize-none"
+                  required
                 />
+              </div>
+
+              {/* Pricing */}
+              <div>
+                <label className="block text-xs md:text-sm font-bold text-gray-700 mb-2 md:mb-3">
+                  Rental Pricing * <span className="text-[10px] md:text-xs font-normal text-gray-500">(At least one required)</span>
+                </label>
+                <div className="grid grid-cols-3 gap-2 md:gap-4">
+                  <div>
+                    <label className="block text-[10px] md:text-xs text-gray-600 mb-1">Per Day</label>
+                    <input
+                      type="number"
+                      name="pricePerDay"
+                      value={formData.pricePerDay}
+                      onChange={handleChange}
+                      placeholder="₹500"
+                      className="w-full px-2 md:px-3 py-1.5 md:py-2 text-sm md:text-base border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] md:text-xs text-gray-600 mb-1">Per Week</label>
+                    <input
+                      type="number"
+                      name="pricePerWeek"
+                      value={formData.pricePerWeek}
+                      onChange={handleChange}
+                      placeholder="₹3000"
+                      className="w-full px-2 md:px-3 py-1.5 md:py-2 text-sm md:text-base border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] md:text-xs text-gray-600 mb-1">Per Month</label>
+                    <input
+                      type="number"
+                      name="pricePerMonth"
+                      value={formData.pricePerMonth}
+                      onChange={handleChange}
+                      placeholder="₹10000"
+                      className="w-full px-2 md:px-3 py-1.5 md:py-2 text-sm md:text-base border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 outline-none"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Location */}
+              <div>
+                <label className="block text-xs md:text-sm font-bold text-gray-700 mb-1.5 md:mb-2">
+                  Location *
+                </label>
+                <div className="relative">
+                  <MapPin className="absolute left-3 md:left-4 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                  <input
+                    type="text"
+                    name="location"
+                    value={formData.location}
+                    onChange={handleChange}
+                    placeholder="e.g., Mumbai, Maharashtra"
+                    className="w-full pl-10 md:pl-12 pr-3 md:pr-4 py-2 md:py-3 text-sm md:text-base border-2 border-gray-200 rounded-lg md:rounded-xl focus:ring-2 md:focus:ring-4 focus:ring-blue-200 focus:border-blue-500 outline-none transition-all"
+                    required
+                  />
+                </div>
               </div>
 
               {/* Condition */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs md:text-sm font-bold text-gray-700 mb-1.5 md:mb-2">
                   Condition *
                 </label>
                 <select
                   name="condition"
                   value={formData.condition}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  className="w-full px-3 md:px-4 py-2 md:py-3 text-sm md:text-base border-2 border-gray-200 rounded-lg md:rounded-xl focus:ring-2 md:focus:ring-4 focus:ring-blue-200 focus:border-blue-500 outline-none transition-all"
                 >
-                  <option value="new">Brand New</option>
+                  <option value="new">New</option>
                   <option value="excellent">Excellent</option>
                   <option value="good">Good</option>
                   <option value="fair">Fair</option>
                 </select>
               </div>
 
-              {/* Location */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Location *
-                </label>
-                <div className="relative">
-                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-                  <input
-                    type="text"
-                    name="location"
-                    value={formData.location}
-                    onChange={handleChange}
-                    placeholder="City, State"
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                  />
-                </div>
-              </div>
-
               {/* Available From */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs md:text-sm font-bold text-gray-700 mb-1.5 md:mb-2">
                   Available From
                 </label>
                 <input
@@ -361,96 +424,103 @@ const PostAd = () => {
                   name="availableFrom"
                   value={formData.availableFrom}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  className="w-full px-3 md:px-4 py-2 md:py-3 text-sm md:text-base border-2 border-gray-200 rounded-lg md:rounded-xl focus:ring-2 md:focus:ring-4 focus:ring-blue-200 focus:border-blue-500 outline-none transition-all"
                 />
               </div>
-            </div>
-          </Card>
 
-          {/* Rental Pricing */}
-          <Card className="p-4 md:p-6">
-            <h2 className="text-lg md:text-xl font-semibold mb-4">Rental Pricing</h2>
-            <p className="text-sm text-gray-600 mb-4">
-              Set your rental rates. You can offer daily, weekly, or monthly rentals (or all three).
-            </p>
-            
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                {/* Per Day */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Price Per Day (₹)
-                  </label>
-                  <input
-                    type="number"
-                    name="pricePerDay"
-                    value={formData.pricePerDay}
-                    onChange={handleChange}
-                    placeholder="500"
-                    min="0"
-                    step="1"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                  />
+              {/* Images Upload */}
+              <div>
+                <label className="block text-xs md:text-sm font-bold text-gray-700 mb-1.5 md:mb-2">
+                  Images * <span className="text-[10px] md:text-xs font-normal text-gray-500">(Minimum 4 required)</span>
+                </label>
+                <div className="grid grid-cols-3 md:grid-cols-4 gap-2 md:gap-4">
+                  {images.map((image, index) => (
+                    <div key={index} className="relative group">
+                      <img
+                        src={image}
+                        alt={`Upload ${index + 1}`}
+                        className="w-full h-20 md:h-32 object-cover rounded-lg md:rounded-xl"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeImage(index)}
+                        className="absolute top-1 right-1 md:top-2 md:right-2 bg-red-500 text-white p-1 md:p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <X size={12} className="md:w-[14px] md:h-[14px]" />
+                      </button>
+                    </div>
+                  ))}
+                  {images.length < 10 && (
+                    <label className="border-2 border-dashed border-gray-300 rounded-lg md:rounded-xl h-20 md:h-32 flex flex-col items-center justify-center cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition-all">
+                      <Upload className="text-gray-400 mb-1 md:mb-2" size={18} />
+                      <span className="text-[10px] md:text-xs text-gray-600 font-medium">Add Image</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        onChange={handleImageUpload}
+                        className="hidden"
+                      />
+                    </label>
+                  )}
                 </div>
-
-                {/* Per Week */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Price Per Week (₹)
-                  </label>
-                  <input
-                    type="number"
-                    name="pricePerWeek"
-                    value={formData.pricePerWeek}
-                    onChange={handleChange}
-                    placeholder="3000"
-                    min="0"
-                    step="1"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                  />
-                </div>
-
-                {/* Per Month */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Price Per Month (₹)
-                  </label>
-                  <input
-                    type="number"
-                    name="pricePerMonth"
-                    value={formData.pricePerMonth}
-                    onChange={handleChange}
-                    placeholder="10000"
-                    min="0"
-                    step="1"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <p className="text-sm text-blue-800">
-                  💡 <strong>Tip:</strong> Offering weekly/monthly rates with discounts can attract longer rentals!
+                <p className="text-[10px] md:text-xs text-gray-500 mt-1.5 md:mt-2">
+                  {images.length}/4 images uploaded (min 4 required)
                 </p>
               </div>
-            </div>
-          </Card>
 
-          {/* Submit Buttons */}
-          <div className="flex flex-col sm:flex-row gap-3">
-            <Button type="submit" className="flex-1">
-              List Item for Rent
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => navigate('/')}
-              className="flex-1"
-            >
-              Cancel
-            </Button>
-          </div>
-        </form>
+              {/* Video Upload */}
+              <div>
+                <label className="block text-xs md:text-sm font-bold text-gray-700 mb-1.5 md:mb-2">
+                  Video * <span className="text-[10px] md:text-xs font-normal text-gray-500">(Required, max 50MB)</span>
+                </label>
+                {!video ? (
+                  <label className="border-2 border-dashed border-gray-300 rounded-lg md:rounded-xl p-4 md:p-8 flex flex-col items-center justify-center cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition-all">
+                    <Upload className="text-gray-400 mb-2 md:mb-3" size={24} />
+                    <span className="text-xs md:text-sm text-gray-700 font-semibold mb-1">Upload Video</span>
+                    <span className="text-[10px] md:text-xs text-gray-500">Max 50MB</span>
+                    <input
+                      type="file"
+                      accept="video/*"
+                      onChange={handleVideoUpload}
+                      className="hidden"
+                    />
+                  </label>
+                ) : (
+                  <div className="relative group">
+                    <video
+                      src={video.preview}
+                      className="w-full h-32 md:h-48 object-cover rounded-lg md:rounded-xl"
+                      controls
+                    />
+                    <button
+                      type="button"
+                      onClick={removeVideo}
+                      className="absolute top-2 md:top-3 right-2 md:right-3 bg-red-500 text-white px-2 py-1.5 md:px-3 md:py-2 rounded-lg text-xs md:text-sm font-semibold opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1.5"
+                    >
+                      <X size={14} />
+                      Remove
+                    </button>
+                    <div className="mt-1.5 md:mt-2 text-[10px] md:text-xs text-gray-600">
+                      {video.name} ({video.size} MB)
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Submit Button */}
+              <div className="pt-2 md:pt-4">
+                <Button
+                  type="submit"
+                  className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 py-3 md:py-4 text-base md:text-lg font-bold shadow-lg"
+                >
+                  Post Rental
+                  <ChevronRight className="ml-2" size={18} />
+                </Button>
+              </div>
+            </form>
+          </Card>
+        )}
       </div>
     </div>
   );

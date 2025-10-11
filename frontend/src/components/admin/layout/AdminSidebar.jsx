@@ -5,6 +5,7 @@ function AdminSidebar({ activePage, setActivePage }) {
     { name: 'Dashboard', icon: 'HomeIcon' },
     { name: 'Users', icon: 'UsersIcon' },
     { name: 'Products', icon: 'ProductsIcon' },
+    { name: 'Categories', icon: 'CategoryIcon' },
     { name: 'Subscriptions', icon: 'SubscriptionIcon' },
     { name: 'Boosts', icon: 'BoostIcon' },
     { name: 'Payments', icon: 'PaymentIcon' },

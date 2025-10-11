@@ -1,33 +1,12 @@
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../../contexts/AppContext';
+import { useCategories } from '../../contexts/CategoryContext';
 import { ChevronRight } from 'lucide-react';
 import AdBanner from './AdBanner';
 
-// Import category images
-import carImg from '../../assets/car.png';
-import mobileImg from '../../assets/mobile.png';
-import bikeImg from '../../assets/bike.png';
-import furnitureImg from '../../assets/furniture.png';
-import fashionImg from '../../assets/fashion.png';
-import bookImg from '../../assets/book.png';
-import sportImg from '../../assets/sport.png';
-import realstateImg from '../../assets/realstate.png';
-import petImg from '../../assets/pet.png';
-
-const imageMap = {
-  'car.png': carImg,
-  'mobile.png': mobileImg,
-  'bike.png': bikeImg,
-  'furniture.png': furnitureImg,
-  'fashion.png': fashionImg,
-  'book.png': bookImg,
-  'sport.png': sportImg,
-  'realstate.png': realstateImg,
-  'pet.png': petImg,
-};
-
 const CategoryGrid = () => {
   const { categories, setSelectedCategory } = useApp();
+  const { imageMap } = useCategories();
   const navigate = useNavigate();
 
   const handleCategoryClick = (category) => {

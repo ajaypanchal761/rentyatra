@@ -4,6 +4,7 @@ import AdminHeader from '../../components/admin/layout/AdminHeader';
 import DashboardView from '../../components/admin/views/DashboardView';
 import UserManagementView from '../../components/admin/views/UserManagementView';
 import ProductManagementView from '../../components/admin/views/ProductManagementView';
+import CategoryManagementView from '../../components/admin/views/CategoryManagementView';
 import SubscriptionManagementView from '../../components/admin/views/SubscriptionManagementView';
 import BoostManagementView from '../../components/admin/views/BoostManagementView';
 import PaymentManagementView from '../../components/admin/views/PaymentManagementView';
@@ -24,6 +25,8 @@ export default function AdminDashboard() {
         return <UserManagementView />;
             case 'Products':
         return <ProductManagementView />;
+            case 'Categories':
+        return <CategoryManagementView />;
             case 'Subscriptions':
         return <SubscriptionManagementView />;
             case 'Boosts':
