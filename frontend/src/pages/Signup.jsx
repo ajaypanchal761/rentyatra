@@ -384,13 +384,6 @@ const Signup = () => {
 
               {/* Header */}
               <div className="mb-5 md:mb-8">
-                <div className="hidden md:inline-flex items-center gap-2 bg-gradient-to-r from-purple-50 to-pink-50 px-3 py-1.5 rounded-full mb-3 md:mb-4 border border-purple-200">
-                  <Sparkles size={14} className="text-purple-600" />
-                  <span className="text-xs font-bold text-purple-700">
-                    {otpSent ? '🔐 Final Step' : '✨ Join RentX'}
-                  </span>
-                </div>
-                
                 <h2 className="text-2xl md:text-5xl font-black text-gray-900 mb-2 md:mb-3 leading-tight">
                   {otpSent ? (
                     <>

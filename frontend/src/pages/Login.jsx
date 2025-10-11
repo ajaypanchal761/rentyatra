@@ -298,13 +298,6 @@ const Login = () => {
 
               {/* Header */}
               <div className="mb-5 md:mb-8">
-                <div className="hidden md:inline-flex items-center gap-2 bg-gradient-to-r from-blue-50 to-indigo-50 px-3 py-1.5 rounded-full mb-3 md:mb-4 border border-blue-200">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-                  <span className="text-xs font-bold text-blue-700">
-                    {otpSent ? '🔐 Verification Step' : '🚀 Quick Login'}
-                  </span>
-                </div>
-                
                 <h2 className="text-2xl md:text-5xl font-black text-gray-900 mb-2 md:mb-3 leading-tight">
                   {otpSent ? (
                     <>

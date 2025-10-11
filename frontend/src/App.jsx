@@ -42,16 +42,19 @@ function AppContent() {
   const hideNavbar = location.pathname.startsWith('/category/');
   const hideFooter = location.pathname === '/' || location.pathname.startsWith('/category/');
   
-  // Hide navbars on auth pages and dashboard for small screens
+  // Hide navbars on auth pages and dashboard
   const isAuthPage = location.pathname === '/login' || location.pathname === '/signup';
   const isDashboardPage = location.pathname.startsWith('/dashboard') || location.pathname === '/favorites' || location.pathname === '/bookings' || location.pathname === '/messages';
-  const hideNavbarMobile = hideNavbar || isAuthPage || isDashboardPage;
+  
+  // Hide navbar and footer completely on auth pages
+  const shouldHideNavbar = hideNavbar || isAuthPage;
+  const shouldHideFooter = hideFooter || isAuthPage;
 
   return (
     <div className="flex flex-col min-h-screen">
-      {!hideNavbar && <div className={(isAuthPage || isDashboardPage) ? 'hidden md:block' : ''}><Navbar /></div>}
+      {!shouldHideNavbar && <div className={isDashboardPage ? 'hidden md:block' : ''}><Navbar /></div>}
       <SubscriptionNotifications />
-      <main className={`flex-1 ${!hideNavbarMobile ? 'pb-24 md:pb-0' : (isAuthPage || isDashboardPage) ? 'pb-0 md:pb-0' : 'pb-20 md:pb-4'}`}>
+      <main className={`flex-1 ${!shouldHideNavbar && !isDashboardPage ? 'pb-24 md:pb-0' : isDashboardPage ? 'pb-0 md:pb-0' : 'pb-0'}`}>
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/listings" element={<Listings />} />
@@ -74,8 +77,8 @@ function AppContent() {
           <Route path="/subscription/failed" element={<PaymentFailed />} />
         </Routes>
       </main>
-      {!hideFooter && <Footer />}
-      <div className={(isAuthPage || isDashboardPage) ? 'hidden md:block' : ''}>
+      {!shouldHideFooter && <Footer />}
+      <div className={(isAuthPage || isDashboardPage) ? 'hidden' : ''}>
         <BottomNav />
       </div>
     </div>
