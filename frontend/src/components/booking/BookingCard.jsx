@@ -81,9 +81,13 @@ const BookingCard = ({ item }) => {
     }
 
     const booking = {
-      itemId: item.id,
-      itemTitle: item.title,
-      itemImage: item.images[0],
+      item: {
+        id: item.id,
+        title: item.title,
+        images: item.images,
+        location: item.location,
+        price: item.price,
+      },
       startDate: startDate.toISOString(),
       endDate: endDate.toISOString(),
       totalDays: calculateDays(),
@@ -94,7 +98,8 @@ const BookingCard = ({ item }) => {
 
     addBooking(booking);
     alert('Booking request submitted successfully! Check your dashboard to track it.');
-    navigate('/dashboard/bookings');
+    // Navigate to dashboard and set to bookings tab
+    navigate('/dashboard', { state: { activeTab: 'bookings' } });
   };
 
   const formatDate = (date) => {

@@ -11,7 +11,7 @@ import sportImg from '../assets/sport.png';
 import realstateImg from '../assets/realstate.png';
 import petImg from '../assets/pet.png';
 
-const CategoryContext = createContext();
+const CategoryContext = createContext(null);
 
 export const useCategories = () => {
   const context = useContext(CategoryContext);

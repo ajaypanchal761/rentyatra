@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useCategories } from './CategoryContext';
 
 const AppContext = createContext(null);
@@ -13,7 +13,8 @@ export const useApp = () => {
 
 export const AppProvider = ({ children }) => {
   // Get dynamic categories from CategoryContext
-  const { categories: dynamicCategories } = useCategories();
+  const categoryContext = useCategories();
+  const categories = categoryContext.categories;
   
   const [items, setItems] = useState([]);
   const [favorites, setFavorites] = useState([]);
@@ -24,9 +25,6 @@ export const AppProvider = ({ children }) => {
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [priceRange, setPriceRange] = useState({ min: 0, max: 50000 });
   const [location, setLocation] = useState('');
-  
-  // Use dynamic categories from CategoryContext
-  const categories = dynamicCategories;
 
   // Load favorites, recently viewed, reviews, and bookings from localStorage
   useEffect(() => {
@@ -250,27 +248,35 @@ export const AppProvider = ({ children }) => {
     setItems(mockItems);
   }, []);
 
-  const addToFavorites = (itemId) => {
-    if (!favorites.includes(itemId)) {
-      const updatedFavorites = [...favorites, itemId];
-      setFavorites(updatedFavorites);
+  const addToFavorites = useCallback((itemId) => {
+    setFavorites((prev) => {
+      if (!prev.includes(itemId)) {
+        const updatedFavorites = [...prev, itemId];
+        localStorage.setItem('favorites', JSON.stringify(updatedFavorites));
+        return updatedFavorites;
+      }
+      return prev;
+    });
+  }, []);
+
+  const removeFromFavorites = useCallback((itemId) => {
+    setFavorites((prev) => {
+      const updatedFavorites = prev.filter((id) => id !== itemId);
       localStorage.setItem('favorites', JSON.stringify(updatedFavorites));
-    }
-  };
+      return updatedFavorites;
+    });
+  }, []);
 
-  const removeFromFavorites = (itemId) => {
-    const updatedFavorites = favorites.filter((id) => id !== itemId);
-    setFavorites(updatedFavorites);
-    localStorage.setItem('favorites', JSON.stringify(updatedFavorites));
-  };
-
-  const toggleFavorite = (itemId) => {
-    if (favorites.includes(itemId)) {
-      removeFromFavorites(itemId);
-    } else {
-      addToFavorites(itemId);
-    }
-  };
+  const toggleFavorite = useCallback((itemId) => {
+    setFavorites((prev) => {
+      const isInFavorites = prev.includes(itemId);
+      const updatedFavorites = isInFavorites
+        ? prev.filter((id) => id !== itemId)
+        : [...prev, itemId];
+      localStorage.setItem('favorites', JSON.stringify(updatedFavorites));
+      return updatedFavorites;
+    });
+  }, []);
 
   const isFavorite = (itemId) => favorites.includes(itemId);
 
@@ -305,14 +311,16 @@ export const AppProvider = ({ children }) => {
     });
   };
 
-  const addToRecentlyViewed = (itemId) => {
+  const addToRecentlyViewed = useCallback((itemId) => {
     // Remove the item if it already exists to avoid duplicates
-    const filteredViewed = recentlyViewed.filter((id) => id !== itemId);
-    // Add the item to the beginning of the array
-    const updatedRecentlyViewed = [itemId, ...filteredViewed].slice(0, 10); // Keep only last 10 items
-    setRecentlyViewed(updatedRecentlyViewed);
-    localStorage.setItem('recentlyViewed', JSON.stringify(updatedRecentlyViewed));
-  };
+    setRecentlyViewed((prev) => {
+      const filteredViewed = prev.filter((id) => id !== itemId);
+      // Add the item to the beginning of the array
+      const updatedRecentlyViewed = [itemId, ...filteredViewed].slice(0, 10); // Keep only last 10 items
+      localStorage.setItem('recentlyViewed', JSON.stringify(updatedRecentlyViewed));
+      return updatedRecentlyViewed;
+    });
+  }, []);
 
   const getRecentlyViewedItems = () => {
     return recentlyViewed
@@ -349,6 +357,12 @@ export const AppProvider = ({ children }) => {
 
   // Booking management functions
   const addBooking = (booking) => {
+    // Ensure booking has proper structure with item object
+    if (!booking.item) {
+      console.error('Booking must include an item object');
+      return;
+    }
+    
     const newBooking = {
       ...booking,
       id: Date.now(),

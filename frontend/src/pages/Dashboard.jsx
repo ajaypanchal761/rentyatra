@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   Package, Heart, MessageCircle, User, Edit, Trash2, Calendar, Zap, 
   CreditCard, Rocket, LogOut, MapPin, Eye, Menu, X, Home, 
@@ -19,12 +19,22 @@ const Dashboard = () => {
   const { isAuthenticated, user, logout } = useAuth();
   const { items, favorites, deleteItem, bookings, cancelBooking } = useApp();
   const { isProductBoosted } = useSubscription();
+  const location = useLocation();
   const [activeTab, setActiveTab] = useState('profile-menu');
   const [boostModalOpen, setBoostModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const navigate = useNavigate();
+
+  // Handle navigation state (e.g., from booking confirmation)
+  useEffect(() => {
+    if (location.state?.activeTab) {
+      setActiveTab(location.state.activeTab);
+      // Clear the state
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.state, location.pathname, navigate]);
 
   // Set default tab based on screen size
   useEffect(() => {
@@ -455,41 +465,46 @@ const Dashboard = () => {
                 </Card>
               ) : (
                 <div className="space-y-4">
-                  {bookings.map((booking) => (
-                    <Card key={booking.id} className="p-4">
-                      <div className="flex flex-col md:flex-row gap-4">
-                        <img 
-                          src={booking.item.images[0]} 
-                          alt={booking.item.title}
-                          className="w-full md:w-32 h-32 object-cover rounded-lg"
-                        />
-                        <div className="flex-1">
-                          <h3 className="font-bold text-gray-900 mb-2 text-sm md:text-base">{booking.item.title}</h3>
-                          <div className="space-y-1 text-xs md:text-sm text-gray-600">
-                            <p className="flex items-center gap-2">
-                              <Calendar size={14} />
-                              {new Date(booking.startDate).toLocaleDateString()} - {new Date(booking.endDate).toLocaleDateString()}
-                            </p>
-                            <p className="flex items-center gap-2">
-                              <MapPin size={14} />
-                              {booking.item.location}
-                            </p>
-                          </div>
-                          <div className="mt-3 flex items-center justify-between">
-                            <span className="text-base md:text-lg font-bold text-blue-600">₹{booking.totalPrice}</span>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="text-red-600 hover:bg-red-50 text-xs md:text-sm"
-                              onClick={() => cancelBooking(booking.id)}
-                            >
-                              Cancel Booking
-                            </Button>
+                  {bookings.map((booking) => {
+                    // Safety check for booking.item
+                    if (!booking.item) return null;
+                    
+                    return (
+                      <Card key={booking.id} className="p-4">
+                        <div className="flex flex-col md:flex-row gap-4">
+                          <img 
+                            src={booking.item.images?.[0] || 'https://via.placeholder.com/150'} 
+                            alt={booking.item.title || 'Product'}
+                            className="w-full md:w-32 h-32 object-cover rounded-lg"
+                          />
+                          <div className="flex-1">
+                            <h3 className="font-bold text-gray-900 mb-2 text-sm md:text-base">{booking.item.title || 'Untitled Product'}</h3>
+                            <div className="space-y-1 text-xs md:text-sm text-gray-600">
+                              <p className="flex items-center gap-2">
+                                <Calendar size={14} />
+                                {new Date(booking.startDate).toLocaleDateString()} - {new Date(booking.endDate).toLocaleDateString()}
+                              </p>
+                              <p className="flex items-center gap-2">
+                                <MapPin size={14} />
+                                {booking.item.location || 'Location not specified'}
+                              </p>
+                            </div>
+                            <div className="mt-3 flex items-center justify-between">
+                              <span className="text-base md:text-lg font-bold text-blue-600">₹{booking.totalPrice}</span>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="text-red-600 hover:bg-red-50 text-xs md:text-sm"
+                                onClick={() => cancelBooking(booking.id)}
+                              >
+                                Cancel Booking
+                              </Button>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </Card>
-                  ))}
+                      </Card>
+                    );
+                  })}
                 </div>
               )}
             </div>

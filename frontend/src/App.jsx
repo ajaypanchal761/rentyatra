@@ -29,7 +29,7 @@ function AppContent() {
   const location = useLocation();
   const isAdminPage = location.pathname.startsWith('/admin');
 
-  // If it's an admin page, render it directly without any of the other app layout
+  // Admin pages - still need context but no navbar/footer
   if (isAdminPage) {
     return (
       <main>

@@ -20,10 +20,10 @@ const Navbar = () => {
   // Animate placeholder categories
   useEffect(() => {
     const interval = setInterval(() => {
-      setCurrentCategoryIndex((prev) => (prev + 1) % categoryNames.length);
+      setCurrentCategoryIndex((prev) => (prev + 1) % 8); // Fixed length
     }, 2000);
     return () => clearInterval(interval);
-  }, [categoryNames.length]);
+  }, []); // Empty dependency array
 
   const handleSearch = (e) => {
     e.preventDefault();
