@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
 
-const DateRangePicker = ({ startDate, endDate, onDateChange, minDate = new Date() }) => {
+const DateRangePicker = ({ startDate, endDate, onDateChange, onComplete, minDate = new Date() }) => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectingStart, setSelectingStart] = useState(true);
 
@@ -44,6 +44,10 @@ const DateRangePicker = ({ startDate, endDate, onDateChange, minDate = new Date(
       } else {
         onDateChange(startDate, date);
         setSelectingStart(true);
+        // Call onComplete callback when both dates are selected
+        if (onComplete) {
+          onComplete();
+        }
       }
     }
   };

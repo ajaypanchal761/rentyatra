@@ -5,6 +5,8 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useApp } from '../../contexts/AppContext';
 import Button from '../common/Button';
 import LocationSearch from '../home/LocationSearch';
+import rentyatralogo from '../../assets/rentyatralogo.jpg.png';
+
 
 const Navbar = () => {
   const [showNotifications, setShowNotifications] = useState(false);
@@ -40,9 +42,7 @@ const Navbar = () => {
           {/* Top Row - Logo and Location */}
           <div className="flex items-center justify-between h-14">
             <Link to="/" className="flex items-center flex-shrink-0">
-              <div className="text-2xl font-black tracking-tight">
-                <span className="text-[#002f34]">Rent Yatra</span>
-              </div>
+              <img src={rentyatralogo} alt="RentYatra Logo" className="h-28 w-auto relative top-2 left-2" />
             </Link>
             <div className="relative">
               <button
@@ -50,7 +50,7 @@ const Navbar = () => {
                 className="flex items-center gap-1.5 px-1.5 py-1 hover:bg-gray-100 rounded transition"
               >
                 <MapPin size={18} className="text-gray-700 flex-shrink-0" />
-                <span className="text-xs font-medium text-gray-900 truncate max-w-[100px]">
+                <span className="text-xs font-medium text-gray-900 whitespace-nowrap">
                   {location || 'New Palasia, Indore'}
                 </span>
                 <ChevronDown size={16} className="text-gray-700 flex-shrink-0" />
@@ -216,9 +216,7 @@ const Navbar = () => {
         <div className="hidden md:flex items-center justify-between h-16 gap-4">
           {/* Logo */}
           <Link to="/" className="flex items-center flex-shrink-0">
-            <div className="text-3xl font-black tracking-tight">
-              <span className="text-[#002f34]">Rent Yatra</span>
-            </div>
+            <img src={rentyatralogo} alt="RentYatra Logo" className="h-42 w-48 relative top-3" />
           </Link>
 
           {/* Location Selector */}

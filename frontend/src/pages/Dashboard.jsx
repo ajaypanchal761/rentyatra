@@ -85,7 +85,8 @@ const Dashboard = () => {
     {
       title: 'Account & Services',
       items: [
-        { id: 'subscription', label: 'Subscription', icon: Rocket, color: 'indigo' },
+        { id: 'subscription', label: 'My Subscription', icon: CreditCard, color: 'indigo' },
+        { id: 'boosts', label: 'My Boosts', icon: Zap, color: 'orange' },
         { id: 'transaction-history', label: 'Transaction History', icon: History, color: 'teal' },
         { id: 'my-reviews', label: 'My Reviews', icon: ThumbsUp, color: 'pink' },
         { id: 'job-applications', label: 'My Job Applications', icon: Briefcase, color: 'orange' },
@@ -149,6 +150,16 @@ const Dashboard = () => {
     }
     if (tabId === 'share-app') {
       setShareModalOpen(true);
+      setSidebarOpen(false);
+      return;
+    }
+    if (tabId === 'subscription') {
+      navigate('/my-subscription');
+      setSidebarOpen(false);
+      return;
+    }
+    if (tabId === 'boosts') {
+      navigate('/my-boosts');
       setSidebarOpen(false);
       return;
     }

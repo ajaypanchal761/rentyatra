@@ -160,6 +160,7 @@ const BookingCard = ({ item }) => {
               startDate={startDate}
               endDate={endDate}
               onDateChange={handleDateChange}
+              onComplete={() => setShowCalendar(false)}
             />
           </div>
         )}
