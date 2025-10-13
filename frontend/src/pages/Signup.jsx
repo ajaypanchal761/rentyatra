@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import Button from '../components/common/Button';
 import OTPInput from '../components/auth/OTPInput';
 import ResendTimer from '../components/auth/ResendTimer';
+import documentService from '../services/documentService';
 
 // Custom Arrow components
 const ArrowRight = ({ size, className }) => (
@@ -45,7 +46,7 @@ const Signup = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   
-  const { signup } = useAuth();
+  const { sendOTP, verifyOTP, register } = useAuth();
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -56,57 +57,63 @@ const Signup = () => {
     setError('');
   };
 
-  const handleAadharFrontUpload = (e) => {
+  const handleAadharFrontUpload = async (e) => {
     const file = e.target.files[0];
     if (file) {
-      // Check file size (max 5MB)
-      if (file.size > 5 * 1024 * 1024) {
+      // Validate file size
+      if (!documentService.validateFileSize(file)) {
         setError('Aadhar card file size should be less than 5MB');
         return;
       }
 
-      // Check file type
-      if (!file.type.startsWith('image/')) {
-        setError('Please upload a valid image file for Aadhar card');
+      // Validate file type
+      if (!documentService.validateFileType(file)) {
+        setError('Please upload a valid image file (JPG, PNG, WebP) for Aadhar card');
         return;
       }
 
-      setAadharFront(file);
-      setError('');
-      
-      // Create preview
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setAadharFrontPreview(reader.result);
-      };
-      reader.readAsDataURL(file);
+      try {
+        // Compress image before storing
+        const compressedFile = await documentService.compressImage(file);
+        setAadharFront(compressedFile);
+        setError('');
+        
+        // Create preview
+        const preview = await documentService.createImagePreview(compressedFile);
+        setAadharFrontPreview(preview);
+      } catch (error) {
+        setError('Failed to process image. Please try again.');
+      }
     }
   };
 
-  const handleAadharBackUpload = (e) => {
+  const handleAadharBackUpload = async (e) => {
     const file = e.target.files[0];
     if (file) {
-      // Check file size (max 5MB)
-      if (file.size > 5 * 1024 * 1024) {
+      // Validate file size
+      if (!documentService.validateFileSize(file)) {
         setError('Aadhar card file size should be less than 5MB');
         return;
       }
 
-      // Check file type
-      if (!file.type.startsWith('image/')) {
-        setError('Please upload a valid image file for Aadhar card');
+      // Validate file type
+      if (!documentService.validateFileType(file)) {
+        setError('Please upload a valid image file (JPG, PNG, WebP) for Aadhar card');
         return;
       }
 
-      setAadharBack(file);
-      setError('');
-      
-      // Create preview
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setAadharBackPreview(reader.result);
-      };
-      reader.readAsDataURL(file);
+      try {
+        // Compress image before storing
+        const compressedFile = await documentService.compressImage(file);
+        setAadharBack(compressedFile);
+        setError('');
+        
+        // Create preview
+        const preview = await documentService.createImagePreview(compressedFile);
+        setAadharBackPreview(preview);
+      } catch (error) {
+        setError('Failed to process image. Please try again.');
+      }
     }
   };
 
@@ -153,7 +160,7 @@ const Signup = () => {
     return true;
   };
 
-  // Send OTP (Mock implementation)
+  // Send OTP
   const handleSendOTP = async (e) => {
     e.preventDefault();
     setError('');
@@ -163,33 +170,41 @@ const Signup = () => {
 
     setIsSendingOTP(true);
 
-    // Mock API call - Replace with actual API call
-    setTimeout(() => {
-      // Simulate sending OTP
-      console.log('📱 OTP sent to:', formData.phone);
-      console.log('📧 OTP sent to:', formData.email);
+    try {
+      // Clean phone number (remove spaces, +, -, etc.)
+      const cleanPhone = formData.phone.replace(/\D/g, '');
       
-      // In real implementation, backend will send OTP
-      // For demo, we'll use 123456 as OTP
-      console.log('🔑 Demo OTP: 123456');
+      const response = await sendOTP(cleanPhone);
       
-      setOtpSent(true);
-      setSuccess(`OTP sent successfully to ${formData.phone} and ${formData.email}`);
+      if (response.success) {
+        setOtpSent(true);
+        setSuccess(`OTP sent successfully to ${formData.phone}`);
+      }
+    } catch (error) {
+      setError(error.message || 'Failed to send OTP. Please try again.');
+    } finally {
       setIsSendingOTP(false);
-    }, 400);
+    }
   };
 
   // Resend OTP
-  const handleResendOTP = () => {
+  const handleResendOTP = async () => {
     setError('');
     setOtp(['', '', '', '', '', '']);
     
-    // Mock API call
-    console.log('🔄 Resending OTP...');
-    setSuccess('OTP resent successfully!');
-    
-    // Clear success message after 3 seconds
-    setTimeout(() => setSuccess(''), 3000);
+    try {
+      const cleanPhone = formData.phone.replace(/\D/g, '');
+      const response = await sendOTP(cleanPhone);
+      
+      if (response.success) {
+        setSuccess('OTP resent successfully!');
+        
+        // Clear success message after 3 seconds
+        setTimeout(() => setSuccess(''), 3000);
+      }
+    } catch (error) {
+      setError(error.message || 'Failed to resend OTP. Please try again.');
+    }
   };
 
   // Verify OTP and create account
@@ -207,35 +222,36 @@ const Signup = () => {
 
     setIsVerifying(true);
 
-    // Mock API call - Replace with actual API call
-    setTimeout(() => {
-      // Mock OTP verification
-      // In real app, backend will verify the OTP
-      if (otpValue === '123456') {
-        // OTP verified successfully
-        const userData = {
-          id: Date.now(),
-          name: formData.name,
-          email: formData.email,
-          phone: formData.phone,
-          aadharCardFront: aadharFrontPreview,
-          aadharCardBack: aadharBackPreview,
-        };
-
-        // In real app, backend will create the account
-        // For now, we'll just store it temporarily
-        localStorage.setItem('pendingUser', JSON.stringify(userData));
-        
-        setSuccess('Account created successfully! Please login to continue...');
+    try {
+      const cleanPhone = formData.phone.replace(/\D/g, '');
+      
+      // First verify OTP and create account
+      const response = await verifyOTP(cleanPhone, otpValue, formData.name, formData.email);
+      
+      if (response.success) {
+        // After successful account creation, upload Aadhar images
+        try {
+          // Upload Aadhar images without Aadhar number (backend will extract it using OCR)
+          const uploadResponse = await documentService.uploadAadharCard(null, aadharFront, aadharBack);
+          
+          if (uploadResponse.data.aadhar.extractedNumber) {
+            setSuccess('Account created and Aadhar card uploaded successfully! Aadhar number extracted automatically.');
+          } else {
+            setSuccess('Account created and Aadhar card uploaded successfully!');
+          }
+        } catch (uploadError) {
+          console.error('Document upload error:', uploadError);
+          setSuccess('Account created successfully! You can upload documents later from your profile.');
+        }
         
         setTimeout(() => {
-          navigate('/login');
+          navigate('/');
         }, 1000);
-      } else {
-        setError('Invalid OTP. Please try again or resend OTP. (Demo OTP: 123456)');
-        setIsVerifying(false);
       }
-    }, 400);
+    } catch (error) {
+      setError(error.message || 'Invalid OTP. Please try again.');
+      setIsVerifying(false);
+    }
   };
 
   // Auto-verify when all 6 digits are entered
@@ -677,11 +693,9 @@ const Signup = () => {
                       <p className="text-sm md:text-base text-gray-700 font-semibold">
                         Enter your verification code
                       </p>
-                      <div className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-100 to-pink-100 px-4 py-2 rounded-full border border-purple-300">
-                        <Zap size={14} className="text-purple-600" />
-                        <span className="text-xs text-purple-700 font-bold">Demo OTP:</span>
-                        <span className="text-sm font-black text-purple-900 font-mono">123456</span>
-                      </div>
+                      <p className="text-xs text-gray-500">
+                        Check your phone for the 6-digit OTP
+                      </p>
                     </div>
                   </div>
 

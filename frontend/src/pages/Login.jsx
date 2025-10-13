@@ -36,7 +36,7 @@ const Login = () => {
   const [success, setSuccess] = useState('');
   const [isNewUser, setIsNewUser] = useState(false);
   
-  const { login } = useAuth();
+  const { loginWithOTP, sendOTP } = useAuth();
   const navigate = useNavigate();
 
   // Check if user just signed up
@@ -73,7 +73,7 @@ const Login = () => {
     return true;
   };
 
-  // Send OTP (Mock implementation)
+  // Send OTP
   const handleSendOTP = async (e) => {
     e.preventDefault();
     setError('');
@@ -83,35 +83,44 @@ const Login = () => {
 
     setIsSendingOTP(true);
 
-    // Mock API call - Replace with actual API call
-    setTimeout(() => {
-      // Simulate sending OTP
-      console.log(`📱 OTP sent to: ${phone}`);
+    try {
+      // Clean phone number (remove spaces, +, -, etc.)
+      const cleanPhone = phone.replace(/\D/g, '');
       
-      // In real implementation, backend will send OTP
-      // For demo, we'll use 123456 as OTP
-      console.log('🔑 Demo OTP: 123456');
+      const response = await sendOTP(cleanPhone);
       
-      // Mask phone number for display
-      const maskedPhone = phone.replace(/(\d{2})(\d+)(\d{4})/, '$1*****$3');
-      
-      setOtpSent(true);
-      setSuccess(`OTP sent successfully to ${maskedPhone}`);
+      if (response.success) {
+        // Mask phone number for display
+        const maskedPhone = phone.replace(/(\d{2})(\d+)(\d{4})/, '$1*****$3');
+        
+        setOtpSent(true);
+        setSuccess(`OTP sent successfully to ${maskedPhone}`);
+      }
+    } catch (error) {
+      setError(error.message || 'Failed to send OTP. Please try again.');
+    } finally {
       setIsSendingOTP(false);
-    }, 400);
+    }
   };
 
   // Resend OTP
-  const handleResendOTP = () => {
+  const handleResendOTP = async () => {
     setError('');
     setOtp(['', '', '', '', '', '']);
     
-    // Mock API call
-    console.log('🔄 Resending OTP...');
-    setSuccess('OTP resent successfully!');
-    
-    // Clear success message after 3 seconds
-    setTimeout(() => setSuccess(''), 3000);
+    try {
+      const cleanPhone = phone.replace(/\D/g, '');
+      const response = await sendOTP(cleanPhone);
+      
+      if (response.success) {
+        setSuccess('OTP resent successfully!');
+        
+        // Clear success message after 3 seconds
+        setTimeout(() => setSuccess(''), 3000);
+      }
+    } catch (error) {
+      setError(error.message || 'Failed to resend OTP. Please try again.');
+    }
   };
 
   // Verify OTP and login
@@ -129,30 +138,21 @@ const Login = () => {
 
     setIsVerifying(true);
 
-    // Mock API call - Replace with actual API call
-    setTimeout(() => {
-      // Mock OTP verification
-      // In real app, backend will verify the OTP and return user data
-      if (otpValue === '123456') {
-        // OTP verified successfully - Mock user data
-        const userData = {
-          id: Date.now(),
-          name: 'Demo User',
-          email: 'demo@example.com',
-          phone: phone,
-        };
-
-        login(userData);
+    try {
+      const cleanPhone = phone.replace(/\D/g, '');
+      const response = await loginWithOTP(cleanPhone, otpValue);
+      
+      if (response.success) {
         setSuccess('Login successful! Redirecting...');
         
         setTimeout(() => {
           navigate('/');
         }, 800);
-      } else {
-        setError('Invalid OTP. Please try again or resend OTP. (Demo OTP: 123456)');
-        setIsVerifying(false);
       }
-    }, 400);
+    } catch (error) {
+      setError(error.message || 'Invalid OTP. Please try again.');
+      setIsVerifying(false);
+    }
   };
 
   // Auto-verify when all 6 digits are entered
@@ -413,10 +413,9 @@ const Login = () => {
                       <p className="text-sm md:text-base text-gray-700 font-medium">
                         Enter the 6-digit verification code
                       </p>
-                      <div className="inline-flex items-center gap-2 bg-gradient-to-r from-indigo-100 to-purple-100 px-4 py-2 rounded-full border border-indigo-200">
-                        <span className="text-xs text-indigo-700 font-bold">Demo OTP:</span>
-                        <span className="text-sm font-black text-indigo-900 font-mono">123456</span>
-                      </div>
+                      <p className="text-xs text-gray-500">
+                        Check your phone for the OTP
+                      </p>
                     </div>
                   </div>
 
