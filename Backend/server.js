@@ -22,23 +22,8 @@ app.use(express.urlencoded({ extended: true }));
 // Static files
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Database connection
-const connectDB = async () => {
-  try {
-    const conn = await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/rentyatra', {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
-
-    console.log(`MongoDB Connected: ${conn.connection.host}`);
-  } catch (error) {
-    console.error('Database connection error:', error);
-    process.exit(1);
-  }
-};
-
-// Connect to database
-connectDB();
+// Import database connection
+const connectDB = require('./config/db');
 
 // Routes
 app.use('/api/auth', authRoutes);
@@ -73,9 +58,31 @@ app.use((err, req, res, next) => {
   });
 });
 
-const PORT = process.env.PORT || 5000;
+// Start server only after database connection is established
+const startServer = async () => {
+  try {
+    // Connect to MongoDB Atlas first
+    await connectDB();
+    
+    const PORT = process.env.PORT || 5000;
+    
+    app.listen(PORT, () => {
+      console.log(`
+🚀 RentYatra Backend Server Started!
+📡 Server running on port: ${PORT}
+🌍 Environment: ${process.env.NODE_ENV || 'development'}
+🔗 API Base URL: http://localhost:${PORT}/api
+📊 Health Check: http://localhost:${PORT}/api/health
+🔐 Auth Endpoints: http://localhost:${PORT}/api/auth
+👤 User Endpoints: http://localhost:${PORT}/api/users
+📄 Document Endpoints: http://localhost:${PORT}/api/documents
+      `);
+    });
+  } catch (error) {
+    console.error('❌ Failed to start server:', error.message);
+    process.exit(1);
+  }
+};
 
-app.listen(PORT, () => {
-  console.log(`RentYatra server running on port ${PORT}`);
-  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-});
+// Start the server
+startServer();
