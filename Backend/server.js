@@ -11,6 +11,7 @@ dotenv.config();
 const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 const documentRoutes = require('./routes/documentRoutes');
+const adminRoutes = require('./routes/adminRoutes');
 
 const app = express();
 
@@ -29,6 +30,7 @@ const connectDB = require('./config/db');
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/documents', documentRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Health check route
 app.get('/api/health', (req, res) => {
@@ -76,6 +78,7 @@ const startServer = async () => {
 🔐 Auth Endpoints: http://localhost:${PORT}/api/auth
 👤 User Endpoints: http://localhost:${PORT}/api/users
 📄 Document Endpoints: http://localhost:${PORT}/api/documents
+🛡️ Admin Endpoints: http://localhost:${PORT}/api/admin
       `);
     });
   } catch (error) {

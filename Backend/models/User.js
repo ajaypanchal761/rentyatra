@@ -212,11 +212,6 @@ const userSchema = new mongoose.Schema({
         },
         verified: { type: Boolean, default: false },
         verifiedAt: Date,
-        verificationStatus: {
-          type: String,
-          enum: ['pending', 'approved', 'rejected'],
-          default: 'pending'
-        },
         rejectionReason: String
       },
       pan: {
@@ -233,11 +228,6 @@ const userSchema = new mongoose.Schema({
         },
         verified: { type: Boolean, default: false },
         verifiedAt: Date,
-        verificationStatus: {
-          type: String,
-          enum: ['pending', 'approved', 'rejected'],
-          default: 'pending'
-        },
         rejectionReason: String
       }
     }

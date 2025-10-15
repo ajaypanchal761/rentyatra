@@ -1,12 +1,12 @@
 // Mock data for Admin Dashboard
 
 export const MOCK_STATS = [
-  { id: 1, title: 'Total Users', value: '12,458', icon: 'UsersIcon', color: 'text-blue-500' },
-  { id: 2, title: 'Total Products', value: '3,890', icon: 'ProductsIcon', color: 'text-indigo-500' },
-  { id: 3, title: 'Total Revenue', value: '₹36,18,480', icon: 'RevenueIcon', color: 'text-green-500' },
-  { id: 4, title: 'Monthly Revenue', value: '₹4,62,560', icon: 'RevenueIcon', color: 'text-teal-500' },
-  { id: 5, title: 'Active Subscriptions', value: '1,240', icon: 'SubscriptionIcon', color: 'text-yellow-500' },
-  { id: 6, title: 'Active Boosts', value: '312', icon: 'BoostIcon', color: 'text-purple-500' }
+  { id: 1, title: 'Total Users', value: '0', icon: 'UsersIcon', color: 'text-blue-500' },
+  { id: 2, title: 'Total Products', value: '0', icon: 'ProductsIcon', color: 'text-indigo-500' },
+  { id: 3, title: 'Total Revenue', value: '₹0', icon: 'RevenueIcon', color: 'text-green-500' },
+  { id: 4, title: 'Monthly Revenue', value: '₹0', icon: 'RevenueIcon', color: 'text-teal-500' },
+  { id: 5, title: 'Active Subscriptions', value: '0', icon: 'SubscriptionIcon', color: 'text-yellow-500' },
+  { id: 6, title: 'Active Boosts', value: '0', icon: 'BoostIcon', color: 'text-purple-500' }
 ];
 
 export const MOCK_ALL_USERS = [
@@ -60,7 +60,7 @@ export const MOCK_ALL_USERS = [
     email: 'david.brown@example.com',
     avatar: 'https://placehold.co/40x40/F59E0B/FFFFFF?text=DB',
     plan: 'Premium',
-    status: 'Banned',
+    status: 'Blocked',
     joinedDate: '2023-12-12',
     aadharCardFront: 'https://images.unsplash.com/photo-1633265486064-086b219458ec?w=400&h=250&fit=crop',
     aadharCardBack: 'https://images.unsplash.com/photo-1589998059171-988d887df646?w=400&h=250&fit=crop'
