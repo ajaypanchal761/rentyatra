@@ -15,7 +15,7 @@ const BottomNav = () => {
   };
 
   const handleNavClick = (path) => {
-    if ((path === '/post-ad' || path === '/dashboard' || path === '/messages') && !isAuthenticated) {
+    if ((path === '/post-ad' || path === '/dashboard' || path === '/dashboard/my-ads' || path === '/messages') && !isAuthenticated) {
       navigate('/login');
       return;
     }
@@ -46,7 +46,7 @@ const BottomNav = () => {
       id: 'my-ads',
       label: 'My Rentals',
       icon: Package,
-      path: '/dashboard',
+      path: '/dashboard/my-ads',
     },
     {
       id: 'account',

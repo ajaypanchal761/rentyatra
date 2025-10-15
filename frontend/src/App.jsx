@@ -17,6 +17,7 @@ import Login from './user/pages/Login';
 import Signup from './user/pages/Signup';
 import PostAd from './user/pages/PostAd';
 import Dashboard from './user/pages/Dashboard';
+import Profile from './user/pages/Profile';
 import Messages from './user/pages/Messages';
 import SubscriptionPage from './user/pages/subscription/SubscriptionPage';
 import MySubscription from './user/pages/subscription/MySubscription';
@@ -89,6 +90,7 @@ function AppContent() {
           <Route path="/signup" element={<Signup />} />
           
           {/* User Dashboard Routes */}
+          <Route path="/dashboard/profile" element={<Profile />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/dashboard/:tab" element={<Dashboard />} />
           <Route path="/favorites" element={<Dashboard />} />

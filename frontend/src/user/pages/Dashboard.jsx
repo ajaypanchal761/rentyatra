@@ -36,6 +36,17 @@ const Dashboard = () => {
     }
   }, [location.state, location.pathname, navigate]);
 
+  // Handle URL parameter for tab selection
+  useEffect(() => {
+    const pathSegments = location.pathname.split('/');
+    if (pathSegments.length > 2 && pathSegments[1] === 'dashboard') {
+      const tabFromUrl = pathSegments[2];
+      if (tabFromUrl) {
+        setActiveTab(tabFromUrl);
+      }
+    }
+  }, [location.pathname]);
+
   // Set default tab based on screen size
   useEffect(() => {
     const checkScreenSize = () => {
@@ -195,7 +206,10 @@ const Dashboard = () => {
         <div className="p-4">
           {/* User Profile Card */}
           <div className="bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl p-4 mb-4 text-white shadow-lg">
-            <div className="flex items-center gap-3 mb-3">
+            <button 
+              onClick={() => navigate('/profile')}
+              className="w-full flex items-center gap-3 mb-3 hover:bg-white/10 rounded-xl p-1 -m-1 transition-colors"
+            >
               <div className="relative">
                 <div className="w-14 h-14 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-white text-2xl font-bold border-2 border-white/30">
                   {user.name.charAt(0)}
@@ -205,11 +219,11 @@ const Dashboard = () => {
                   <BadgeCheck size={12} />
                 </button>
               </div>
-              <div className="flex-1 min-w-0">
+              <div className="flex-1 min-w-0 text-left">
                 <h3 className="font-bold text-white truncate text-sm">{user.name}</h3>
                 <p className="text-xs text-white/80 truncate">{user.email}</p>
               </div>
-            </div>
+            </button>
             {/* Get Verified Button */}
             <button className="w-full bg-white/20 hover:bg-white/30 backdrop-blur-sm border border-white/30 text-white py-2 px-3 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-2">
               <Shield size={14} />
@@ -286,7 +300,13 @@ const Dashboard = () => {
 
               {/* User Profile Card - Mobile */}
               <div className="bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl p-3 mb-3 text-white shadow-lg">
-                <div className="flex items-center gap-2 mb-2">
+                <button 
+                  onClick={() => {
+                    setSidebarOpen(false);
+                    navigate('/profile');
+                  }}
+                  className="w-full flex items-center gap-2 mb-2 hover:bg-white/10 rounded-lg p-1 -m-1 transition-colors"
+                >
                   <div className="relative">
                     <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-white text-lg font-bold border-2 border-white/30">
                       {user.name.charAt(0)}
@@ -295,11 +315,11 @@ const Dashboard = () => {
                       <BadgeCheck size={10} />
                     </button>
                   </div>
-                  <div className="flex-1 min-w-0">
+                  <div className="flex-1 min-w-0 text-left">
                     <h3 className="font-bold text-white truncate text-xs">{user.name}</h3>
                     <p className="text-[10px] text-white/80 truncate">{user.email}</p>
                   </div>
-                </div>
+                </button>
                 <button className="w-full bg-white/20 hover:bg-white/30 backdrop-blur-sm border border-white/30 text-white py-1.5 px-2 rounded-lg text-[10px] font-semibold transition-all flex items-center justify-center gap-1.5">
                   <Shield size={12} />
                   <span>Get Verified Badge</span>
@@ -371,12 +391,7 @@ const Dashboard = () => {
               : menuSections.flatMap(s => s.items).find(i => i.id === activeTab)?.label || 'Dashboard'
             }
           </h1>
-          <button
-            onClick={() => navigate('/')}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-          >
-            <Home size={22} />
-          </button>
+          <div className="w-10"></div>
         </div>
 
         <div className="p-4 md:p-6">
