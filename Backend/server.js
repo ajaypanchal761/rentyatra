@@ -12,6 +12,8 @@ const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 const documentRoutes = require('./routes/documentRoutes');
 const adminRoutes = require('./routes/adminRoutes');
+const productRoutes = require('./routes/productRoutes');
+const categoryRoutes = require('./routes/categoryRoutes');
 
 const app = express();
 
@@ -31,6 +33,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/documents', documentRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/admin/products', productRoutes);
+app.use('/api/admin/categories', categoryRoutes);
 
 // Health check route
 app.get('/api/health', (req, res) => {
@@ -79,6 +83,7 @@ const startServer = async () => {
 👤 User Endpoints: http://localhost:${PORT}/api/users
 📄 Document Endpoints: http://localhost:${PORT}/api/documents
 🛡️ Admin Endpoints: http://localhost:${PORT}/api/admin
+📦 Product Endpoints: http://localhost:${PORT}/api/admin/products
       `);
     });
   } catch (error) {

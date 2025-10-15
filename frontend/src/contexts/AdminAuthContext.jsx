@@ -114,6 +114,7 @@ export const AdminAuthProvider = ({ children }) => {
     admin,
     isAuthenticated,
     loading,
+    adminToken: localStorage.getItem('adminToken'),
     login,
     logout,
     updateAdmin,

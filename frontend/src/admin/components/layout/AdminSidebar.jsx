@@ -8,9 +8,7 @@ import {
   DollarSign, 
   Image, 
   Bell, 
-  UserPlus,
-  Menu,
-  X
+  UserPlus
 } from 'lucide-react';
 
 function AdminSidebar({ activePage, setActivePage }) {
@@ -28,7 +26,7 @@ function AdminSidebar({ activePage, setActivePage }) {
   ];
 
   return (
-    <aside className="w-64 bg-slate-900 text-slate-300 flex-col fixed inset-y-0 left-0 z-30 hidden md:flex">
+    <aside className="w-64 bg-slate-900 text-slate-300 flex-col fixed inset-y-0 left-0 z-30 flex">
       <div className="flex items-center justify-center h-20 border-b border-slate-800">
         <Package className="h-8 w-8 text-indigo-400" />
         <span className="text-2xl font-bold ml-2 text-white">RentYatra</span>

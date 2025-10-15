@@ -3,6 +3,8 @@ import AdminSidebar from '../components/layout/AdminSidebar';
 import AdminHeader from '../components/layout/AdminHeader';
 import DashboardView from '../components/views/DashboardView';
 import UserManagementView from '../components/views/UserManagementView';
+import ProductManagementView from '../components/views/ProductManagementView';
+import CategoryManagementView from '../components/views/CategoryManagementView';
 
 // Simple placeholder component for other sections
 function PlaceholderView({ title }) {
@@ -24,7 +26,6 @@ function PlaceholderView({ title }) {
 
 export default function AdminDashboard() {
     const [activePage, setActivePage] = useState('Dashboard');
-    const [isSidebarOpen, setSidebarOpen] = useState(false);
 
     const renderContent = () => {
         switch (activePage) {
@@ -33,9 +34,9 @@ export default function AdminDashboard() {
             case 'Users':
                 return <UserManagementView />;
             case 'Products':
-                return <PlaceholderView title="Product Management" />;
+                return <ProductManagementView />;
             case 'Categories':
-                return <PlaceholderView title="Category Management" />;
+                return <CategoryManagementView />;
             case 'Subscriptions':
                 return <PlaceholderView title="Subscription Management" />;
             case 'Boosts':
@@ -55,39 +56,37 @@ export default function AdminDashboard() {
 
     return (
         <div className="bg-slate-100 min-h-screen font-sans">
-            {/* Mobile Sidebar Overlay */}
-            <div 
-                className={`fixed inset-0 z-40 transition-opacity duration-300 ${
-                    isSidebarOpen ? 'bg-black/50' : 'bg-transparent pointer-events-none opacity-0'
-                }`} 
-                onClick={() => setSidebarOpen(false)}
-            ></div>
-            
-            {/* Mobile Sidebar (Drawer) */}
-            <div className={`fixed inset-y-0 left-0 z-50 w-64 transform transition-transform duration-300 md:hidden ${
-                isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
-            }`}>
-                <AdminSidebar 
-                    activePage={activePage} 
-                    setActivePage={(page) => {
-                        setActivePage(page);
-                        setSidebarOpen(false);
-                    }} 
-                />
+            {/* Desktop Only - No Mobile Support */}
+            <div className="hidden md:block">
+                {/* Desktop Sidebar */}
+                <AdminSidebar activePage={activePage} setActivePage={setActivePage} />
+
+                {/* Main Content Area */}
+                <div className="ml-64 flex flex-col min-h-screen">
+                    <AdminHeader pageTitle={activePage} />
+                    <main className="flex-1 p-8 mt-16">
+                        {renderContent()}
+                    </main>
+                </div>
             </div>
 
-            {/* Desktop Sidebar */}
-            <AdminSidebar activePage={activePage} setActivePage={setActivePage} />
-
-            {/* Main Content Area */}
-            <div className="md:ml-64 flex flex-col min-h-screen">
-                <AdminHeader 
-                    pageTitle={activePage} 
-                    toggleSidebar={() => setSidebarOpen(!isSidebarOpen)} 
-                />
-                <main className="flex-1 p-4 md:p-8 mt-16">
-                    {renderContent()}
-                </main>
+            {/* Mobile Not Supported Message */}
+            <div className="md:hidden flex items-center justify-center min-h-screen bg-slate-100">
+                <div className="text-center p-8 max-w-md">
+                    <div className="text-6xl mb-6">💻</div>
+                    <h1 className="text-2xl font-bold text-slate-800 mb-4">Desktop Only</h1>
+                    <p className="text-slate-600 mb-6">
+                        The admin panel is designed for desktop use only. Please access it from a desktop or laptop computer for the best experience.
+                    </p>
+                    <div className="bg-white rounded-lg p-6 shadow-lg border border-slate-200">
+                        <h2 className="text-lg font-semibold text-slate-700 mb-2">System Requirements</h2>
+                        <ul className="text-sm text-slate-600 space-y-1">
+                            <li>• Desktop or Laptop Computer</li>
+                            <li>• Minimum 1024px screen width</li>
+                            <li>• Modern web browser</li>
+                        </ul>
+                    </div>
+                </div>
             </div>
         </div>
     );

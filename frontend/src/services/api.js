@@ -6,6 +6,7 @@ class ApiService {
   constructor() {
     this.baseURL = API_BASE_URL;
     this.token = localStorage.getItem('token');
+    this.adminToken = localStorage.getItem('adminToken');
   }
 
   // Set authentication token
@@ -15,6 +16,16 @@ class ApiService {
       localStorage.setItem('token', token);
     } else {
       localStorage.removeItem('token');
+    }
+  }
+
+  // Set admin authentication token
+  setAdminToken(token) {
+    this.adminToken = token;
+    if (token) {
+      localStorage.setItem('adminToken', token);
+    } else {
+      localStorage.removeItem('adminToken');
     }
   }
 
@@ -39,6 +50,33 @@ class ApiService {
       headers.Authorization = `Bearer ${this.token}`;
     }
 
+    return headers;
+  }
+
+  // Get admin authentication headers
+  getAdminHeaders() {
+    const headers = {
+      'Content-Type': 'application/json',
+    };
+
+    if (this.adminToken) {
+      headers.Authorization = `Bearer ${this.adminToken}`;
+    }
+
+    return headers;
+  }
+
+  // Get admin headers for file upload
+  getAdminFileUploadHeaders() {
+    const headers = {};
+
+    if (this.adminToken) {
+      headers.Authorization = `Bearer ${this.adminToken}`;
+    } else {
+      console.warn('No admin token found for file upload');
+    }
+
+    console.log('Admin file upload headers:', headers);
     return headers;
   }
 
@@ -214,6 +252,618 @@ class ApiService {
     return this.request(`/documents/delete/${type}`, {
       method: 'DELETE',
     });
+  }
+
+  // Admin APIs
+  async adminLogin(email, password, adminKey) {
+    return this.request('/admin/login', {
+      method: 'POST',
+      body: JSON.stringify({ email, password, adminKey }),
+    });
+  }
+
+  async adminSignup(adminData) {
+    return this.request('/admin/signup', {
+      method: 'POST',
+      body: JSON.stringify(adminData),
+    });
+  }
+
+  async getAdminProfile() {
+    const url = `${this.baseURL}/admin/me`;
+    const config = {
+      headers: this.getAdminHeaders(),
+    };
+
+    try {
+      const response = await fetch(url, config);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Something went wrong');
+      }
+
+      return data;
+    } catch (error) {
+      console.error('API Request Error:', error);
+      throw error;
+    }
+  }
+
+  async updateAdminProfile(adminData) {
+    const url = `${this.baseURL}/admin/profile`;
+    const config = {
+      method: 'PUT',
+      headers: this.getAdminHeaders(),
+      body: JSON.stringify(adminData),
+    };
+
+    try {
+      const response = await fetch(url, config);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Something went wrong');
+      }
+
+      return data;
+    } catch (error) {
+      console.error('API Request Error:', error);
+      throw error;
+    }
+  }
+
+  async getAdminStats() {
+    const url = `${this.baseURL}/admin/stats`;
+    const config = {
+      headers: this.getAdminHeaders(),
+    };
+
+    try {
+      const response = await fetch(url, config);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Something went wrong');
+      }
+
+      return data;
+    } catch (error) {
+      console.error('API Request Error:', error);
+      throw error;
+    }
+  }
+
+  async getAllUsers(page = 1, limit = 10, search = '') {
+    const url = `${this.baseURL}/admin/users?page=${page}&limit=${limit}&search=${search}`;
+    const config = {
+      headers: this.getAdminHeaders(),
+    };
+
+    try {
+      const response = await fetch(url, config);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Something went wrong');
+      }
+
+      return data;
+    } catch (error) {
+      console.error('API Request Error:', error);
+      throw error;
+    }
+  }
+
+  async getUserDetails(userId) {
+    const url = `${this.baseURL}/admin/users/${userId}`;
+    const config = {
+      headers: this.getAdminHeaders(),
+    };
+
+    try {
+      const response = await fetch(url, config);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Something went wrong');
+      }
+
+      return data;
+    } catch (error) {
+      console.error('API Request Error:', error);
+      throw error;
+    }
+  }
+
+  async updateUserStatus(userId, status) {
+    const url = `${this.baseURL}/admin/users/${userId}/status`;
+    const config = {
+      method: 'PUT',
+      headers: this.getAdminHeaders(),
+      body: JSON.stringify({ status }),
+    };
+
+    try {
+      const response = await fetch(url, config);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Something went wrong');
+      }
+
+      return data;
+    } catch (error) {
+      console.error('API Request Error:', error);
+      throw error;
+    }
+  }
+
+  async deleteUser(userId) {
+    const url = `${this.baseURL}/admin/users/${userId}`;
+    const config = {
+      method: 'DELETE',
+      headers: this.getAdminHeaders(),
+    };
+
+    try {
+      const response = await fetch(url, config);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Something went wrong');
+      }
+
+      return data;
+    } catch (error) {
+      console.error('API Request Error:', error);
+      throw error;
+    }
+  }
+
+  // Product APIs
+  async addProduct(productData) {
+    const formData = new FormData();
+    
+    // Add form fields
+    Object.keys(productData).forEach(key => {
+      if (key === 'images') {
+        // Handle images separately
+        productData[key].forEach(image => {
+          formData.append('images', image);
+        });
+      } else {
+        formData.append(key, productData[key]);
+      }
+    });
+
+    const url = `${this.baseURL}/admin/products`;
+    const config = {
+      method: 'POST',
+      headers: this.getAdminFileUploadHeaders(),
+      body: formData,
+    };
+
+    try {
+      console.log('Making request to:', url);
+      console.log('Request config:', config);
+      console.log('FormData contents:');
+      for (let [key, value] of formData.entries()) {
+        console.log(key, value);
+      }
+      
+      const response = await fetch(url, config);
+      console.log('Response status:', response.status);
+      console.log('Response headers:', response.headers);
+      
+      const data = await response.json();
+      console.log('Response data:', data);
+
+      if (!response.ok) {
+        console.error('Server error response:', data);
+        throw new Error(data.message || `Server error: ${response.status}`);
+      }
+
+      return data;
+    } catch (error) {
+      console.error('File Upload Error Details:', {
+        error: error,
+        message: error.message,
+        stack: error.stack
+      });
+      throw error;
+    }
+  }
+
+  async getAllProducts(page = 1, limit = 10, status = '', search = '') {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString(),
+    });
+    
+    if (status) params.append('status', status);
+    if (search) params.append('search', search);
+
+    const url = `${this.baseURL}/admin/products?${params.toString()}`;
+    const config = {
+      headers: this.getAdminHeaders(),
+    };
+
+    try {
+      const response = await fetch(url, config);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Something went wrong');
+      }
+
+      return data;
+    } catch (error) {
+      console.error('API Request Error:', error);
+      throw error;
+    }
+  }
+
+  async getProduct(productId) {
+    const url = `${this.baseURL}/admin/products/${productId}`;
+    const config = {
+      headers: this.getAdminHeaders(),
+    };
+
+    try {
+      const response = await fetch(url, config);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Something went wrong');
+      }
+
+      return data;
+    } catch (error) {
+      console.error('API Request Error:', error);
+      throw error;
+    }
+  }
+
+  async updateProduct(productId, productData) {
+    const formData = new FormData();
+    
+    // Add form fields
+    Object.keys(productData).forEach(key => {
+      if (key === 'images') {
+        // Handle images separately
+        productData[key].forEach(image => {
+          formData.append('images', image);
+        });
+      } else {
+        formData.append(key, productData[key]);
+      }
+    });
+
+    const url = `${this.baseURL}/admin/products/${productId}`;
+    const config = {
+      method: 'PUT',
+      headers: this.getAdminFileUploadHeaders(),
+      body: formData,
+    };
+
+    try {
+      console.log('Updating product:', productId);
+      console.log('Request config:', config);
+      console.log('FormData contents:');
+      for (let [key, value] of formData.entries()) {
+        console.log(key, value);
+      }
+      
+      const response = await fetch(url, config);
+      console.log('Update response status:', response.status);
+      
+      const data = await response.json();
+      console.log('Update response data:', data);
+
+      if (!response.ok) {
+        throw new Error(data.message || `Server error: ${response.status}`);
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Update Product Error:', error);
+      throw error;
+    }
+  }
+
+  async updateProductStatus(productId, status) {
+    const url = `${this.baseURL}/admin/products/${productId}/status`;
+    const config = {
+      method: 'PUT',
+      headers: this.getAdminHeaders(),
+      body: JSON.stringify({ status }),
+    };
+
+    try {
+      const response = await fetch(url, config);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Something went wrong');
+      }
+
+      return data;
+    } catch (error) {
+      console.error('API Request Error:', error);
+      throw error;
+    }
+  }
+
+  async deleteProduct(productId) {
+    const url = `${this.baseURL}/admin/products/${productId}`;
+    const config = {
+      method: 'DELETE',
+      headers: this.getAdminHeaders(),
+    };
+
+    try {
+      const response = await fetch(url, config);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Something went wrong');
+      }
+
+      return data;
+    } catch (error) {
+      console.error('API Request Error:', error);
+      throw error;
+    }
+  }
+
+  async getProductStats() {
+    const url = `${this.baseURL}/admin/products/stats`;
+    const config = {
+      headers: this.getAdminHeaders(),
+    };
+
+    try {
+      const response = await fetch(url, config);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Something went wrong');
+      }
+
+      return data;
+    } catch (error) {
+      console.error('API Request Error:', error);
+      throw error;
+    }
+  }
+
+  // Category APIs
+  async addCategory(categoryData) {
+    const formData = new FormData();
+    
+    // Add form fields
+    Object.keys(categoryData).forEach(key => {
+      if (key === 'images') {
+        // Handle images separately
+        categoryData[key].forEach(image => {
+          formData.append('images', image);
+        });
+      } else {
+        formData.append(key, categoryData[key]);
+      }
+    });
+
+    const url = `${this.baseURL}/admin/categories`;
+    const config = {
+      method: 'POST',
+      headers: this.getAdminFileUploadHeaders(),
+      body: formData,
+    };
+
+    try {
+      console.log('Adding category:', categoryData);
+      console.log('Request config:', config);
+      console.log('FormData contents:');
+      for (let [key, value] of formData.entries()) {
+        console.log(key, value);
+      }
+      
+      const response = await fetch(url, config);
+      console.log('Add category response status:', response.status);
+      console.log('Add category response headers:', response.headers);
+      
+      let data;
+      try {
+        data = await response.json();
+        console.log('Add category response data:', data);
+      } catch (jsonError) {
+        console.error('Error parsing JSON response:', jsonError);
+        const textResponse = await response.text();
+        console.log('Raw response text:', textResponse);
+        throw new Error(`Invalid JSON response: ${textResponse}`);
+      }
+
+      if (!response.ok) {
+        console.error('Server error response:', data);
+        throw new Error(data.message || `Server error: ${response.status}`);
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Add Category Error Details:', {
+        error: error,
+        message: error.message,
+        stack: error.stack,
+        url: url,
+        config: config
+      });
+      throw error;
+    }
+  }
+
+  async getAllCategories(page = 1, limit = 10, status = '', search = '', productId = '') {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString(),
+    });
+    
+    if (status) params.append('status', status);
+    if (search) params.append('search', search);
+    if (productId) params.append('productId', productId);
+
+    const url = `${this.baseURL}/admin/categories?${params.toString()}`;
+    const config = {
+      headers: this.getAdminHeaders(),
+    };
+
+    try {
+      const response = await fetch(url, config);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Something went wrong');
+      }
+
+      return data;
+    } catch (error) {
+      console.error('API Request Error:', error);
+      throw error;
+    }
+  }
+
+  async getCategory(categoryId) {
+    const url = `${this.baseURL}/admin/categories/${categoryId}`;
+    const config = {
+      headers: this.getAdminHeaders(),
+    };
+
+    try {
+      const response = await fetch(url, config);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Something went wrong');
+      }
+
+      return data;
+    } catch (error) {
+      console.error('API Request Error:', error);
+      throw error;
+    }
+  }
+
+  async updateCategory(categoryId, categoryData) {
+    const formData = new FormData();
+    
+    // Add form fields
+    Object.keys(categoryData).forEach(key => {
+      if (key === 'images') {
+        // Handle images separately
+        categoryData[key].forEach(image => {
+          formData.append('images', image);
+        });
+      } else {
+        formData.append(key, categoryData[key]);
+      }
+    });
+
+    const url = `${this.baseURL}/admin/categories/${categoryId}`;
+    const config = {
+      method: 'PUT',
+      headers: this.getAdminFileUploadHeaders(),
+      body: formData,
+    };
+
+    try {
+      console.log('Updating category:', categoryId, categoryData);
+      console.log('Request config:', config);
+      console.log('FormData contents:');
+      for (let [key, value] of formData.entries()) {
+        console.log(key, value);
+      }
+      
+      const response = await fetch(url, config);
+      console.log('Update category response status:', response.status);
+      
+      const data = await response.json();
+      console.log('Update category response data:', data);
+
+      if (!response.ok) {
+        throw new Error(data.message || `Server error: ${response.status}`);
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Update Category Error:', error);
+      throw error;
+    }
+  }
+
+  async deleteCategory(categoryId) {
+    const url = `${this.baseURL}/admin/categories/${categoryId}`;
+    const config = {
+      method: 'DELETE',
+      headers: this.getAdminHeaders(),
+    };
+
+    try {
+      const response = await fetch(url, config);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Something went wrong');
+      }
+
+      return data;
+    } catch (error) {
+      console.error('API Request Error:', error);
+      throw error;
+    }
+  }
+
+  async updateCategoryStatus(categoryId, status) {
+    const url = `${this.baseURL}/admin/categories/${categoryId}/status`;
+    const config = {
+      method: 'PUT',
+      headers: this.getAdminHeaders(),
+      body: JSON.stringify({ status }),
+    };
+
+    try {
+      const response = await fetch(url, config);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Something went wrong');
+      }
+
+      return data;
+    } catch (error) {
+      console.error('API Request Error:', error);
+      throw error;
+    }
+  }
+
+  async getCategoryStats() {
+    const url = `${this.baseURL}/admin/categories/stats`;
+    const config = {
+      headers: this.getAdminHeaders(),
+    };
+
+    try {
+      const response = await fetch(url, config);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Something went wrong');
+      }
+
+      return data;
+    } catch (error) {
+      console.error('API Request Error:', error);
+      throw error;
+    }
   }
 
   // Health check

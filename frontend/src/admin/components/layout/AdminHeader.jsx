@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAdminAuth } from '../../../contexts/AdminAuthContext';
-import { Menu, ChevronDown, LogOut, User, Settings } from 'lucide-react';
+import { ChevronDown, LogOut, User, Settings } from 'lucide-react';
 
-function AdminHeader({ pageTitle, toggleSidebar }) {
+function AdminHeader({ pageTitle }) {
   const [isDropdownOpen, setDropdownOpen] = useState(false);
   const navigate = useNavigate();
   const { logout, admin } = useAdminAuth();
@@ -23,13 +23,10 @@ function AdminHeader({ pageTitle, toggleSidebar }) {
   };
 
   return (
-    <header className="bg-white/80 backdrop-blur-lg shadow-sm fixed top-0 left-0 md:left-64 right-0 z-20">
-      <div className="flex items-center justify-between h-16 px-4 md:px-8">
+    <header className="bg-white/80 backdrop-blur-lg shadow-sm fixed top-0 left-64 right-0 z-20">
+      <div className="flex items-center justify-between h-16 px-8">
         <div className="flex items-center">
-          <button onClick={toggleSidebar} className="md:hidden mr-4 text-slate-600 hover:text-slate-800 transition-colors">
-            <Menu className="h-6 w-6" />
-          </button>
-          <h1 className="text-xl md:text-2xl font-semibold text-slate-800">{pageTitle}</h1>
+          <h1 className="text-2xl font-semibold text-slate-800">{pageTitle}</h1>
         </div>
         <div className="relative">
           <button 
@@ -42,7 +39,7 @@ function AdminHeader({ pageTitle, toggleSidebar }) {
               src="https://placehold.co/40x40/6366F1/FFFFFF?text=A" 
               alt="Admin Avatar" 
             />
-            <span className="hidden md:inline font-medium text-slate-700">{admin?.name || 'Admin User'}</span>
+            <span className="font-medium text-slate-700">{admin?.name || 'Admin User'}</span>
             <ChevronDown 
               className={`h-5 w-5 text-slate-500 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} 
             />

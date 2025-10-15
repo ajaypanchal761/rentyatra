@@ -19,20 +19,28 @@ const adminAuth = async (req, res, next) => {
 
     // Make sure token exists
     if (!token) {
+      console.log('No admin token provided in request');
       return res.status(401).json({
         success: false,
         message: 'Access denied. No token provided.'
       });
     }
 
+    console.log('Admin token found:', token.substring(0, 20) + '...');
+
     try {
       // Verify token
+      console.log('Verifying admin token...');
       const decoded = jwt.verify(token, process.env.JWT_SECRET || 'rentyatra-secret-key');
+      console.log('Token decoded successfully:', decoded);
       
       // Get admin from token
+      console.log('Looking for admin with ID:', decoded.adminId);
       const admin = await Admin.findById(decoded.adminId);
+      console.log('Admin found:', admin ? 'Yes' : 'No');
       
       if (!admin) {
+        console.log('Admin not found in database');
         return res.status(401).json({
           success: false,
           message: 'Access denied. Admin not found.'
@@ -57,6 +65,7 @@ const adminAuth = async (req, res, next) => {
 
       // Add admin to request object
       req.admin = {
+        _id: admin._id,
         adminId: admin._id,
         role: admin.role,
         permissions: admin.permissions

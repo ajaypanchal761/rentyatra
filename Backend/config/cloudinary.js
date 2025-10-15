@@ -63,6 +63,23 @@ const profileStorage = new CloudinaryStorage({
   }
 });
 
+// Create storage configuration for product images
+const productStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'rentyatra/products',
+    allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
+    // No transformation - upload full size images
+    public_id: (req, file) => {
+      // Generate unique filename with product name and timestamp
+      const productName = req.body.name ? req.body.name.replace(/[^a-zA-Z0-9]/g, '_') : 'product';
+      const timestamp = Date.now();
+      const randomId = Math.random().toString(36).substring(2, 8);
+      return `product_${productName}_${timestamp}_${randomId}`;
+    }
+  }
+});
+
 // File filter function
 const fileFilter = (req, file, cb) => {
   // Check file type
@@ -101,6 +118,41 @@ const uploadProfile = multer({
   }
 });
 
+const uploadProduct = multer({
+  storage: productStorage,
+  fileFilter: fileFilter,
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB limit
+    files: 10 // Maximum 10 product images
+  }
+});
+
+// Create storage configuration for category images
+const categoryStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'rentyatra/categories',
+    allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
+    // No transformation - upload full size images
+    public_id: (req, file) => {
+      // Generate unique filename with category name and timestamp
+      const categoryName = req.body.name ? req.body.name.replace(/[^a-zA-Z0-9]/g, '_') : 'category';
+      const timestamp = Date.now();
+      const randomId = Math.random().toString(36).substring(2, 8);
+      return `category_${categoryName}_${timestamp}_${randomId}`;
+    }
+  }
+});
+
+const uploadCategory = multer({
+  storage: categoryStorage,
+  fileFilter: fileFilter,
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB limit
+    files: 10 // Maximum 10 category images
+  }
+});
+
 // Helper function to delete image from Cloudinary
 const deleteImage = async (publicId) => {
   try {
@@ -130,6 +182,8 @@ module.exports = {
   uploadAadhar,
   uploadPAN,
   uploadProfile,
+  uploadProduct,
+  uploadCategory,
   deleteImage,
   extractPublicId
 };
