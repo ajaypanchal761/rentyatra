@@ -185,93 +185,6 @@ const Login = () => {
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row md:bg-gradient-to-br md:from-slate-50 md:via-blue-50 md:to-indigo-100">
-      {/* Left Side - Hero Section */}
-      <div className="hidden md:flex md:w-1/2 lg:w-3/5 relative overflow-hidden">
-        {/* Animated Gradient Background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-600 via-indigo-700 to-purple-900">
-          {/* Animated Orbs */}
-          <div className="absolute inset-0 overflow-hidden">
-            <div className="absolute -top-40 -left-40 w-80 h-80 bg-blue-400 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob"></div>
-            <div className="absolute -top-20 -right-20 w-80 h-80 bg-purple-400 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob animation-delay-2000"></div>
-            <div className="absolute -bottom-20 left-20 w-80 h-80 bg-pink-400 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob animation-delay-4000"></div>
-          </div>
-
-          {/* Grid Pattern Overlay */}
-          <div className="absolute inset-0 bg-grid-white/[0.05] bg-[size:40px_40px]"></div>
-        </div>
-
-        {/* Content */}
-        <div className="relative z-10 flex flex-col justify-between p-12 text-white">
-          {/* Logo & Header */}
-          <div>
-            <Link to="/" className="inline-block group">
-              <div className="flex items-center gap-3 mb-12">
-                <div className="w-12 h-12 bg-white/10 backdrop-blur-xl rounded-2xl flex items-center justify-center border border-white/20 group-hover:scale-110 transition-transform">
-                  <Sparkles className="text-white" size={28} />
-                </div>
-                <span className="text-3xl font-black">RentX</span>
-              </div>
-            </Link>
-            
-            <div className="space-y-6 max-w-lg">
-              <div className="inline-block">
-                <div className="flex items-center gap-2 bg-white/10 backdrop-blur-md px-4 py-2 rounded-full border border-white/20 mb-6">
-                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                  <span className="text-sm font-semibold">Secure OTP Login</span>
-                </div>
-              </div>
-              
-              <h1 className="text-5xl lg:text-6xl xl:text-7xl font-black leading-tight">
-                Welcome
-                <br />
-                <span className="bg-gradient-to-r from-cyan-200 via-blue-200 to-purple-200 bg-clip-text text-transparent">
-                  Back!
-                </span>
-              </h1>
-              
-              <p className="text-xl text-blue-100 leading-relaxed">
-                Login instantly with OTP. No passwords to remember - just verify and you're in!
-              </p>
-            </div>
-
-            {/* Feature Pills */}
-            <div className="mt-12 flex flex-wrap gap-3">
-              {[
-                { icon: Shield, text: 'Secure' },
-                { icon: Zap, text: 'Instant' },
-                { icon: Award, text: 'Trusted' },
-              ].map((feature, idx) => {
-                const Icon = feature.icon;
-                return (
-                  <div key={idx} className="flex items-center gap-2 bg-white/10 backdrop-blur-md px-4 py-2 rounded-full border border-white/20">
-                    <Icon size={16} />
-                    <span className="text-sm font-medium">{feature.text}</span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Stats */}
-          <div className="grid grid-cols-3 gap-6">
-            {[
-              { icon: Users, value: '50K+', label: 'Active Users' },
-              { icon: Award, value: '4.9★', label: 'Rating' },
-              { icon: TrendingUp, value: '₹10Cr+', label: 'Transactions' },
-            ].map((stat, idx) => {
-              const Icon = stat.icon;
-              return (
-                <div key={idx} className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/20">
-                  <Icon className="mb-2 opacity-80" size={24} />
-                  <div className="text-2xl font-black">{stat.value}</div>
-                  <div className="text-xs text-blue-200">{stat.label}</div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-
       {/* Right Side - Login Form */}
       <div className="flex-1 flex items-center justify-center md:p-12 relative min-h-screen md:min-h-0">
         {/* Mobile Full-Screen Background */}
@@ -291,15 +204,6 @@ const Login = () => {
             <div className="hidden md:block absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-indigo-500 to-pink-600 opacity-10 blur-3xl rounded-full"></div>
             
             <div className="relative z-10">
-              {/* Back Button - Mobile Only */}
-              <Link 
-                to="/" 
-                className="md:hidden inline-flex items-center gap-2 text-gray-700 hover:text-gray-900 font-semibold mb-6 group"
-              >
-                <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
-                <span className="text-sm">Back to Home</span>
-              </Link>
-
               {/* Header */}
               <div className="mb-5 md:mb-8">
                 <h2 className="text-2xl md:text-5xl font-black text-gray-900 mb-2 md:mb-3 leading-tight">

@@ -284,95 +284,6 @@ const Signup = () => {
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row md:bg-gradient-to-br md:from-slate-50 md:via-purple-50 md:to-pink-100">
-      {/* Left Side - Hero Section */}
-      <div className="hidden md:flex md:w-1/2 lg:w-3/5 relative overflow-hidden">
-        {/* Animated Gradient Background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-indigo-600 via-purple-700 to-pink-600">
-          {/* Animated Orbs */}
-          <div className="absolute inset-0 overflow-hidden">
-            <div className="absolute top-0 -left-40 w-96 h-96 bg-blue-400 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob"></div>
-            <div className="absolute top-0 -right-20 w-96 h-96 bg-pink-400 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob animation-delay-2000"></div>
-            <div className="absolute -bottom-20 left-20 w-96 h-96 bg-yellow-400 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob animation-delay-4000"></div>
-          </div>
-
-          {/* Grid Pattern */}
-          <div className="absolute inset-0 bg-grid-white/[0.05] bg-[size:40px_40px]"></div>
-        </div>
-
-        {/* Content */}
-        <div className="relative z-10 flex flex-col justify-between p-12 text-white">
-          {/* Logo & Header */}
-          <div>
-            <Link to="/" className="inline-block group">
-              <div className="flex items-center gap-3 mb-12">
-                <div className="w-12 h-12 bg-white/10 backdrop-blur-xl rounded-2xl flex items-center justify-center border border-white/20 group-hover:scale-110 transition-transform">
-                  <Sparkles className="text-white" size={28} />
-                </div>
-                <span className="text-3xl font-black">RentX</span>
-              </div>
-            </Link>
-            
-            <div className="space-y-6 max-w-lg">
-              <div className="inline-block">
-                <div className="flex items-center gap-2 bg-white/10 backdrop-blur-md px-4 py-2 rounded-full border border-white/20 mb-6">
-                  <Sparkles size={16} className="text-yellow-300" />
-                  <span className="text-sm font-semibold">Join 50,000+ Happy Users</span>
-                </div>
-              </div>
-              
-              <h1 className="text-5xl lg:text-6xl xl:text-7xl font-black leading-tight">
-                Start Your
-                <br />
-                <span className="bg-gradient-to-r from-yellow-200 via-pink-200 to-purple-200 bg-clip-text text-transparent">
-                  Rental Journey
-                </span>
-              </h1>
-              
-              <p className="text-xl text-purple-100 leading-relaxed">
-                Create your account in seconds. List items, earn money, and connect with thousands of renters!
-              </p>
-            </div>
-
-            {/* Benefits with Icons */}
-            <div className="mt-12 space-y-4">
-              {[
-                { icon: Zap, text: 'List items in under 2 minutes', gradient: 'from-yellow-400 to-orange-500' },
-                { icon: Users, text: 'Reach 100K+ potential renters', gradient: 'from-blue-400 to-indigo-500' },
-                { icon: Shield, text: 'Secure OTP verification', gradient: 'from-green-400 to-emerald-500' },
-                { icon: Award, text: 'Build your rental reputation', gradient: 'from-pink-400 to-rose-500' },
-              ].map((benefit, idx) => {
-                const Icon = benefit.icon;
-                return (
-                  <div key={idx} className="flex items-center gap-4 group cursor-default">
-                    <div className={`w-12 h-12 bg-gradient-to-br ${benefit.gradient} rounded-xl flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform shadow-lg`}>
-                      <Icon size={24} className="text-white" />
-                    </div>
-                    <span className="text-lg font-semibold">{benefit.text}</span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Stats Cards */}
-          <div className="grid grid-cols-3 gap-6">
-            {[
-              { icon: Users, value: '50K+', label: 'Users' },
-              { icon: Award, value: '4.9★', label: 'Rating' },
-              { icon: TrendingUp, value: '₹10Cr+', label: 'GMV' },
-            ].map((stat, idx) => {
-              const Icon = stat.icon;
-              return (
-                <div key={idx} className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/20 hover:bg-white/20 transition-all">
-                  <Icon className="mb-2 opacity-80" size={24} />
-                  <div className="text-2xl font-black">{stat.value}</div>
-                  <div className="text-xs text-purple-200">{stat.label}</div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </div>
 
       {/* Right Side - Signup Form */}
       <div className="flex-1 flex items-center justify-center md:p-12 relative min-h-screen md:min-h-0">
@@ -393,15 +304,6 @@ const Signup = () => {
             <div className="hidden md:block absolute bottom-0 left-0 w-40 h-40 bg-gradient-to-tr from-pink-500 to-rose-600 opacity-10 blur-3xl rounded-full"></div>
             
             <div className="relative z-10">
-              {/* Back Button - Mobile Only */}
-              <Link 
-                to="/" 
-                className="md:hidden inline-flex items-center gap-2 text-gray-700 hover:text-gray-900 font-semibold mb-6 group"
-              >
-                <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
-                <span className="text-sm">Back to Home</span>
-              </Link>
-
               {/* Header */}
               <div className="mb-5 md:mb-8">
                 <h2 className="text-2xl md:text-5xl font-black text-gray-900 mb-2 md:mb-3 leading-tight">
