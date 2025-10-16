@@ -1,6 +1,6 @@
 // API Base URL - with fallback for development and production
 const API_BASE_URL = import.meta.env.VITE_API_URL || 
-  (import.meta.env.DEV ? 'http://localhost:5000/api' : 'https://rentyatra-1.onrender.com/api');
+  (import.meta.env.DEV ? 'http://localhost:5000/api' : 'http://localhost:5000/api'); // Temporarily use local for both dev and prod until CORS is fixed
 
 // API Service Class
 class ApiService {
