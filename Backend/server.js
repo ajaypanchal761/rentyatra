@@ -7,6 +7,15 @@ const path = require('path');
 // Load environment variables
 dotenv.config();
 
+// Validate required environment variables
+const requiredEnvVars = ['MONGODB_URI', 'JWT_SECRET'];
+const missingEnvVars = requiredEnvVars.filter(envVar => !process.env[envVar]);
+
+if (missingEnvVars.length > 0) {
+  console.error('❌ Missing required environment variables:', missingEnvVars);
+  process.exit(1);
+}
+
 // Import routes
 const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
@@ -19,10 +28,38 @@ const publicCategoryRoutes = require('./routes/publicCategoryRoutes');
 
 const app = express();
 
+// CORS Configuration
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    const allowedOrigins = [
+      'http://localhost:3000',
+      'http://localhost:5173',
+      'https://rentyatra.onrender.com',
+      'https://rentyatra-frontend.onrender.com',
+      process.env.FRONTEND_URL,
+      process.env.CORS_ORIGIN
+    ].filter(Boolean); // Remove undefined values
+    
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      console.log('CORS blocked origin:', origin);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-requested-with'],
+  optionsSuccessStatus: 200
+};
+
 // Middleware
-app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(cors(corsOptions));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Static files
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
@@ -71,29 +108,54 @@ app.use((err, req, res, next) => {
 // Start server only after database connection is established
 const startServer = async () => {
   try {
+    console.log('🔄 Starting RentYatra Backend Server...');
+    console.log('🌍 Environment:', process.env.NODE_ENV || 'development');
+    
     // Connect to MongoDB Atlas first
     await connectDB();
     
     const PORT = process.env.PORT || 5000;
+    const HOST = process.env.HOST || '0.0.0.0';
     
-    app.listen(PORT, () => {
+    const server = app.listen(PORT, HOST, () => {
       console.log(`
-🚀 RentYatra Backend Server Started!
-📡 Server running on port: ${PORT}
+🚀 RentYatra Backend Server Started Successfully!
+📡 Server running on: ${HOST}:${PORT}
 🌍 Environment: ${process.env.NODE_ENV || 'development'}
-🔗 API Base URL: http://localhost:${PORT}/api
-📊 Health Check: http://localhost:${PORT}/api/health
-🔐 Auth Endpoints: http://localhost:${PORT}/api/auth
-👤 User Endpoints: http://localhost:${PORT}/api/users
-📄 Document Endpoints: http://localhost:${PORT}/api/documents
-🛡️ Admin Endpoints: http://localhost:${PORT}/api/admin
-📦 Product Endpoints: http://localhost:${PORT}/api/admin/products
-🛍️ Public Product Endpoints: http://localhost:${PORT}/api/products
-📂 Public Category Endpoints: http://localhost:${PORT}/api/categories
+🔗 API Base URL: ${process.env.NODE_ENV === 'production' ? `https://${process.env.RENDER_EXTERNAL_HOSTNAME || 'your-app.onrender.com'}` : `http://localhost:${PORT}`}/api
+📊 Health Check: ${process.env.NODE_ENV === 'production' ? `https://${process.env.RENDER_EXTERNAL_HOSTNAME || 'your-app.onrender.com'}` : `http://localhost:${PORT}`}/api/health
+🔐 Auth Endpoints: /api/auth
+👤 User Endpoints: /api/users
+📄 Document Endpoints: /api/documents
+🛡️ Admin Endpoints: /api/admin
+📦 Product Endpoints: /api/admin/products
+🛍️ Public Product Endpoints: /api/products
+📂 Public Category Endpoints: /api/categories
       `);
     });
+
+    // Handle server errors
+    server.on('error', (error) => {
+      if (error.code === 'EADDRINUSE') {
+        console.error(`❌ Port ${PORT} is already in use`);
+      } else {
+        console.error('❌ Server error:', error);
+      }
+      process.exit(1);
+    });
+
+    // Graceful shutdown
+    process.on('SIGTERM', () => {
+      console.log('🛑 SIGTERM received, shutting down gracefully');
+      server.close(() => {
+        console.log('🔌 Server closed');
+        process.exit(0);
+      });
+    });
+
   } catch (error) {
     console.error('❌ Failed to start server:', error.message);
+    console.error('❌ Error details:', error);
     process.exit(1);
   }
 };
