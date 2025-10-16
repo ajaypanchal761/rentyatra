@@ -37,7 +37,7 @@ const corsOptions = {
     const allowedOrigins = [
       'http://localhost:3000',
       'http://localhost:5173',
-      'https://rentyatra-1.onrender.com',
+      'https://rentyatra.vercel.app/',
     
       process.env.FRONTEND_URL,
       process.env.CORS_ORIGIN
