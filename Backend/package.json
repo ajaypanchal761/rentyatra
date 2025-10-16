@@ -1,16 +1,21 @@
 {
-  "name": "backend",
+  "name": "rentyatra-backend",
   "version": "1.0.0",
   "main": "server.js",
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "nodemon server.js",
-    "start": "node server.js"
+    "start": "node server.js",
+    "build": "echo 'No build step required for Node.js backend'"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": ["rentyatra", "backend", "api", "rental", "marketplace"],
+  "author": "RentYatra Team",
   "license": "ISC",
-  "description": "",
+  "description": "RentYatra Backend API - Rental marketplace backend service",
   "dependencies": {
     "axios": "^1.6.0",
     "bcryptjs": "^3.0.2",
