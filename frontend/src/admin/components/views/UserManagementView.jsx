@@ -93,10 +93,10 @@ const UserDetailsModal = ({ user, isOpen, onClose }) => {
             {/* User Profile */}
             <div className="flex items-center space-x-3">
               <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
-                {user.name.charAt(0).toUpperCase()}
+                {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
               </div>
               <div>
-                <h2 className="text-sm font-bold text-slate-800">{user.name}</h2>
+                <h2 className="text-sm font-bold text-slate-800">{user.name || 'Unknown User'}</h2>
                 <p className="text-xs text-slate-500">{user.email}</p>
               </div>
             </div>
@@ -258,12 +258,12 @@ const UserListItem = ({ user, onView, onEdit, onDelete, onToggleStatus }) => {
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-3">
           <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
-            {user.name.charAt(0).toUpperCase()}
+            {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
           </div>
           <div className="flex-1">
             <div className="flex items-center space-x-3">
               <div>
-                <h3 className="text-sm font-semibold text-slate-800">{user.name}</h3>
+                <h3 className="text-sm font-semibold text-slate-800">{user.name || 'Unknown User'}</h3>
                 <p className="text-xs text-slate-500">{user.email}</p>
                 <div className="flex items-center space-x-2 mt-1">
                   <span className="text-xs text-slate-600">{user.plan || 'Basic'}</span>
@@ -468,7 +468,7 @@ const UserManagementView = () => {
     console.log('Full user object:', JSON.stringify(user, null, 2));
     
     // Test: Manually set Aadhar URLs for Ajay Panchal if they're missing
-    if (user.name === 'Ajay Panchal' && (!user.aadharCardFront || !user.aadharCardBack)) {
+    if (user.name && user.name === 'Ajay Panchal' && (!user.aadharCardFront || !user.aadharCardBack)) {
       console.log('Manually setting Aadhar URLs for testing...');
       user.aadharCardFront = 'https://res.cloudinary.com/ajaypanchal761/image/upload/v1760358740/rentyatra/aadhar-cards/aadhar_68ecf1405dc76114574b7b11_1760358739440.jpg';
       user.aadharCardBack = 'https://res.cloudinary.com/ajaypanchal761/image/upload/v1760358740/rentyatra/aadhar-cards/aadhar_68ecf1405dc76114574b7b11_1760358739445.jpg';
@@ -492,9 +492,34 @@ const UserManagementView = () => {
     // Implement edit user modal
   };
 
-  const handleDeleteUser = (user) => {
-    console.log('Delete user:', user);
-    // Implement delete confirmation
+  const handleDeleteUser = async (user) => {
+    // Show confirmation dialog
+    const confirmed = window.confirm(
+      `Are you sure you want to delete user "${user.name || user.email || 'Unknown User'}"?\n\nThis action cannot be undone and will permanently remove the user and all their data.`
+    );
+    
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      console.log('Deleting user:', user);
+      
+      // Use the API service to delete the user
+      const apiService = (await import('../../../services/api')).default;
+      await apiService.deleteUser(user.id);
+
+      // Remove user from local state
+      setUsers(prevUsers => prevUsers.filter(u => u.id !== user.id));
+      
+      // Show success message
+      alert(`User "${user.name || user.email || 'Unknown User'}" has been successfully deleted.`);
+      
+      console.log('User deleted successfully');
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      alert(`Failed to delete user: ${error.message}`);
+    }
   };
 
   const handleToggleStatus = async (user) => {

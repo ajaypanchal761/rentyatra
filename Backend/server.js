@@ -25,6 +25,7 @@ const productRoutes = require('./routes/productRoutes');
 const categoryRoutes = require('./routes/categoryRoutes');
 const publicProductRoutes = require('./routes/publicProductRoutes');
 const publicCategoryRoutes = require('./routes/publicCategoryRoutes');
+const bannerRoutes = require('./routes/bannerRoutes');
 
 const app = express();
 
@@ -78,6 +79,7 @@ app.use('/api/documents', documentRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/admin/products', productRoutes);
 app.use('/api/admin/categories', categoryRoutes);
+app.use('/api/admin/banners', bannerRoutes);
 app.use('/api/products', publicProductRoutes);
 app.use('/api/categories', publicCategoryRoutes);
 

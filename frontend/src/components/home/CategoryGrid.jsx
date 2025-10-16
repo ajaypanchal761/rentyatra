@@ -95,7 +95,7 @@ const CategoryGrid = () => {
           </div>
           
           {loading ? (
-            <div className="grid grid-cols-6 gap-3 lg:gap-4">
+            <div className="grid grid-cols-8 gap-2 lg:gap-3">
               {[...Array(12)].map((_, index) => (
                 <div key={index} className="animate-pulse">
                   <div className="w-full aspect-square bg-gray-200 rounded-lg mb-2"></div>
@@ -114,21 +114,21 @@ const CategoryGrid = () => {
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-6 gap-3 lg:gap-4">
+            <div className="grid grid-cols-8 gap-2 lg:gap-3">
               {products.slice(0, 12).map((product) => {
                 const primaryImage = product.images?.find(img => img.isPrimary) || product.images?.[0];
                 return (
                   <button
                     key={product._id}
                     onClick={() => handleProductClick(product)}
-                    className="group relative flex flex-col items-center transition-all duration-200 hover:-translate-y-1 max-w-[120px] mx-auto"
+                    className="group relative flex flex-col items-center transition-all duration-200 hover:-translate-y-1 max-w-[90px] mx-auto"
                   >
                     {/* Hover gradient background */}
                     <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                     
                     <div className="relative w-full">
                       {/* Image Container - Larger for 6x2 grid */}
-                      <div className="w-full aspect-square rounded-lg overflow-hidden bg-white mb-2 flex items-center justify-center shadow-sm group-hover:shadow-lg transition-all duration-200 border border-gray-100 group-hover:border-blue-200 p-2">
+                      <div className="w-full aspect-square rounded-lg overflow-hidden bg-white mb-1 flex items-center justify-center shadow-sm group-hover:shadow-lg transition-all duration-200 border border-gray-100 group-hover:border-blue-200 p-1">
                         {primaryImage ? (
                           <img
                             src={primaryImage.url}
@@ -144,7 +144,7 @@ const CategoryGrid = () => {
                       
                       {/* Product Name */}
                       <div className="text-center px-1">
-                        <h3 className="font-semibold text-sm text-gray-800 group-hover:text-blue-600 line-clamp-2 tracking-tight transition-colors duration-200">
+                        <h3 className="font-medium text-xs text-gray-800 group-hover:text-blue-600 line-clamp-2 tracking-tight transition-colors duration-200">
                           {product.name}
                         </h3>
                       </div>

@@ -1121,6 +1121,218 @@ class ApiService {
     }
   }
 
+  // Banner APIs
+  async addBanner(bannerData) {
+    const formData = new FormData();
+    
+    // Add form fields
+    Object.keys(bannerData).forEach(key => {
+      if (key === 'image') {
+        // Handle image separately
+        formData.append('image', bannerData[key]);
+      } else {
+        formData.append(key, bannerData[key]);
+      }
+    });
+
+    const url = `${this.baseURL}/admin/banners`;
+    const config = {
+      method: 'POST',
+      headers: this.getAdminFileUploadHeaders(),
+      body: formData,
+    };
+
+    try {
+      console.log('Adding banner:', bannerData);
+      console.log('Request config:', config);
+      console.log('FormData contents:');
+      for (let [key, value] of formData.entries()) {
+        console.log(key, value);
+      }
+      
+      const response = await this.fetchWithTimeout(url, config, 120000); // 2 minutes for file uploads
+      console.log('Add banner response status:', response.status);
+      console.log('Add banner response headers:', response.headers);
+      
+      const data = await response.json();
+      console.log('Add banner response data:', data);
+
+      if (!response.ok) {
+        console.error('Server error response:', data);
+        throw new Error(data.message || `Server error: ${response.status}`);
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Add Banner Error Details:', {
+        error: error,
+        message: error.message,
+        stack: error.stack
+      });
+      
+      // Provide more specific error messages
+      if (error.message === 'Request Timeout') {
+        throw new Error('Upload timeout - Please try again with smaller files or check your internet connection');
+      } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        throw new Error('Network error - Please check your internet connection');
+      }
+      
+      throw error;
+    }
+  }
+
+  async getAllBanners(page = 1, limit = 10) {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString(),
+    });
+
+    const url = `${this.baseURL}/admin/banners?${params.toString()}`;
+    const config = {
+      headers: this.getAdminHeaders(),
+    };
+
+    try {
+      const response = await fetch(url, config);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Something went wrong');
+      }
+
+      return data;
+    } catch (error) {
+      console.error('API Request Error:', error);
+      throw error;
+    }
+  }
+
+  async getBanner(bannerId) {
+    const url = `${this.baseURL}/admin/banners/${bannerId}`;
+    const config = {
+      headers: this.getAdminHeaders(),
+    };
+
+    try {
+      const response = await fetch(url, config);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Something went wrong');
+      }
+
+      return data;
+    } catch (error) {
+      console.error('API Request Error:', error);
+      throw error;
+    }
+  }
+
+  async updateBanner(bannerId, bannerData) {
+    const formData = new FormData();
+    
+    // Add form fields
+    Object.keys(bannerData).forEach(key => {
+      if (key === 'image') {
+        // Handle image separately
+        formData.append('image', bannerData[key]);
+      } else {
+        formData.append(key, bannerData[key]);
+      }
+    });
+
+    const url = `${this.baseURL}/admin/banners/${bannerId}`;
+    const config = {
+      method: 'PUT',
+      headers: this.getAdminFileUploadHeaders(),
+      body: formData,
+    };
+
+    try {
+      console.log('Updating banner:', bannerId, bannerData);
+      console.log('Request config:', config);
+      console.log('FormData contents:');
+      for (let [key, value] of formData.entries()) {
+        console.log(key, value);
+      }
+      
+      const response = await this.fetchWithTimeout(url, config, 120000); // 2 minutes for file uploads
+      console.log('Update banner response status:', response.status);
+      
+      const data = await response.json();
+      console.log('Update banner response data:', data);
+
+      if (!response.ok) {
+        throw new Error(data.message || `Server error: ${response.status}`);
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Update Banner Error:', error);
+      
+      // Provide more specific error messages
+      if (error.message === 'Request Timeout') {
+        throw new Error('Update timeout - Please try again with smaller files or check your internet connection');
+      } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        throw new Error('Network error - Please check your internet connection');
+      }
+      
+      throw error;
+    }
+  }
+
+  async deleteBanner(bannerId) {
+    const url = `${this.baseURL}/admin/banners/${bannerId}`;
+    const config = {
+      method: 'DELETE',
+      headers: this.getAdminHeaders(),
+    };
+
+    try {
+      const response = await fetch(url, config);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Something went wrong');
+      }
+
+      return data;
+    } catch (error) {
+      console.error('API Request Error:', error);
+      throw error;
+    }
+  }
+
+
+  // Public Banner APIs (for regular users - no authentication required)
+  async getPublicBanners(position = 'top', limit = 10) {
+    const params = new URLSearchParams({
+      position: position,
+      limit: limit.toString()
+    });
+
+    const url = `${this.baseURL}/admin/banners/public?${params.toString()}`;
+    const config = {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    };
+
+    try {
+      const response = await fetch(url, config);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Something went wrong');
+      }
+
+      return data;
+    } catch (error) {
+      console.error('API Request Error:', error);
+      throw error;
+    }
+  }
+
   // Health check
   async healthCheck() {
     return this.request('/health');

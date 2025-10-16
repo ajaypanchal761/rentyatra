@@ -5,6 +5,7 @@ import DashboardView from '../components/views/DashboardView';
 import UserManagementView from '../components/views/UserManagementView';
 import ProductManagementView from '../components/views/ProductManagementView';
 import CategoryManagementView from '../components/views/CategoryManagementView';
+import BannerManagementView from '../components/views/BannerManagementView';
 
 // Simple placeholder component for other sections
 function PlaceholderView({ title }) {
@@ -44,7 +45,7 @@ export default function AdminDashboard() {
             case 'Payments':
                 return <PlaceholderView title="Payment Management" />;
             case 'Ad Banners':
-                return <PlaceholderView title="Ad Banner Management" />;
+                return <BannerManagementView />;
             case 'Notifications':
                 return <PlaceholderView title="Notification Management" />;
             case 'Referrals':
