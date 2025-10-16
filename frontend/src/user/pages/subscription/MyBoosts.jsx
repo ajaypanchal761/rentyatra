@@ -208,7 +208,7 @@ const MyBoosts = () => {
                         <div className="p-3 bg-white border-t border-gray-200">
                           <div className="space-y-1.5">
                             <Button
-                              onClick={() => navigate(`/product/${boost.productId}`)}
+                              onClick={() => navigate(`/item/${boost.productId}`)}
                               className="w-full py-2 text-xs bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-bold rounded-lg shadow-md"
                             >
                               View Product
@@ -321,7 +321,7 @@ const MyBoosts = () => {
                       {/* Actions */}
                       <div className="p-3 flex flex-col sm:flex-row gap-2">
                         <Button
-                          onClick={() => navigate(`/product/${boost.productId}`)}
+                          onClick={() => navigate(`/item/${boost.productId}`)}
                           className="flex-1 py-1.5 text-xs bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-bold rounded-lg"
                         >
                           View Product

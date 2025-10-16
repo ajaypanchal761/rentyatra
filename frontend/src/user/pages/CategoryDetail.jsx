@@ -1,242 +1,154 @@
 import { useNavigate, useParams } from 'react-router-dom';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
+import { useCategories } from '../../contexts/CategoryContext';
+import { useState, useEffect } from 'react';
+import apiService from '../../services/api';
 
-// Import category images
-import carImg from '../../assets/car.png';
-import mobileImg from '../../assets/mobile.png';
-import bikeImg from '../../assets/bike.png';
-import furnitureImg from '../../assets/furniture.png';
-import fashionImg from '../../assets/fashion.png';
-import bookImg from '../../assets/book.png';
-import sportImg from '../../assets/sport.png';
-import realstateImg from '../../assets/realstate.png';
-import petImg from '../../assets/pet.png';
-
-const imageMap = {
-  'car.png': carImg,
-  'mobile.png': mobileImg,
-  'bike.png': bikeImg,
-  'furniture.png': furnitureImg,
-  'fashion.png': fashionImg,
-  'book.png': bookImg,
-  'sport.png': sportImg,
-  'realstate.png': realstateImg,
-  'pet.png': petImg,
-};
 
 const CategoryDetail = () => {
   const { categorySlug } = useParams();
   const { categories, setSelectedCategory } = useApp();
+  const { getCategoryBySlug } = useCategories();
   const navigate = useNavigate();
 
-  const currentCategory = categories.find(cat => cat.slug === categorySlug) || categories[0];
+  // State for products and loading
+  const [allProducts, setAllProducts] = useState([]); // Store all products (for sidebar)
+  const [backendCategories, setBackendCategories] = useState([]); // Store categories from backend
+  const [subcategories, setSubcategories] = useState([]); // Store subcategories for selected main category
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [selectedProduct, setSelectedProduct] = useState(null); // Track selected product for filtering
 
-  // Category-specific data
-  const categoryData = {
-    cars: {
-      budgetLabel: 'Cars By Budget',
-      budgetRanges: [
-        { id: 1, label: '<3L', description: 'Below 3 Lac' },
-        { id: 2, label: '3L-6L', description: '3 Lac - 6 Lac' },
-        { id: 3, label: '6L-10L', description: '6 Lac - 10 Lac' },
-        { id: 4, label: '10L-15L', description: '10 Lac - 15 Lac' },
-        { id: 5, label: '>15L', description: '15 Lac and Above' },
-      ],
-      subcategories: [
-        { id: 1, name: 'Sedan', icon: '🚗' },
-        { id: 2, name: 'SUV', icon: '🚙' },
-        { id: 3, name: 'Hatchback', icon: '🚕' },
-        { id: 4, name: 'Sports Car', icon: '🏎️' },
-        { id: 5, name: 'Luxury', icon: '🚐' },
-        { id: 6, name: 'Electric', icon: '⚡' },
-      ]
-    },
-    bikes: {
-      budgetLabel: 'Bikes By Budget',
-      budgetRanges: [
-        { id: 1, label: '<50K', description: 'Below 50K' },
-        { id: 2, label: '50K-1L', description: '50K - 1 Lac' },
-        { id: 3, label: '1L-2L', description: '1 Lac - 2 Lac' },
-        { id: 4, label: '2L-5L', description: '2 Lac - 5 Lac' },
-        { id: 5, label: '>5L', description: '5 Lac and Above' },
-      ],
-      subcategories: [
-        { id: 1, name: 'Sports Bike', icon: '🏍️' },
-        { id: 2, name: 'Cruiser', icon: '🛵' },
-        { id: 3, name: 'Scooter', icon: '🛴' },
-        { id: 4, name: 'Commuter', icon: '🚲' },
-        { id: 5, name: 'Electric', icon: '⚡' },
-        { id: 6, name: 'Vintage', icon: '🎪' },
-      ]
-    },
-    mobiles: {
-      budgetLabel: 'Mobiles By Budget',
-      budgetRanges: [
-        { id: 1, label: '<10K', description: 'Below 10K' },
-        { id: 2, label: '10K-20K', description: '10K - 20K' },
-        { id: 3, label: '20K-30K', description: '20K - 30K' },
-        { id: 4, label: '30K-50K', description: '30K - 50K' },
-        { id: 5, label: '>50K', description: '50K and Above' },
-      ],
-      subcategories: [
-        { id: 1, name: 'Smartphones', icon: '📱' },
-        { id: 2, name: 'Feature Phones', icon: '📞' },
-        { id: 3, name: 'Tablets', icon: '📱' },
-        { id: 4, name: 'Accessories', icon: '🔌' },
-        { id: 5, name: 'Smartwatches', icon: '⌚' },
-        { id: 6, name: 'Gaming', icon: '🎮' },
-      ]
-    },
-    properties: {
-      budgetLabel: 'Properties By Budget',
-      budgetRanges: [
-        { id: 1, label: '<20L', description: 'Below 20 Lac' },
-        { id: 2, label: '20L-50L', description: '20 Lac - 50 Lac' },
-        { id: 3, label: '50L-1Cr', description: '50 Lac - 1 Crore' },
-        { id: 4, label: '1Cr-2Cr', description: '1 Cr - 2 Crore' },
-        { id: 5, label: '>2Cr', description: '2 Cr and Above' },
-      ],
-      subcategories: [
-        { id: 1, name: 'Apartments', icon: '🏢' },
-        { id: 2, name: 'Villas', icon: '🏠' },
-        { id: 3, name: 'Plots', icon: '🏗️' },
-        { id: 4, name: 'Commercial', icon: '🏬' },
-        { id: 5, name: 'PG/Hostel', icon: '🛏️' },
-        { id: 6, name: 'Farmhouse', icon: '🌾' },
-      ]
-    },
-    furniture: {
-      budgetLabel: 'Furniture By Budget',
-      budgetRanges: [
-        { id: 1, label: '<5K', description: 'Below 5K' },
-        { id: 2, label: '5K-10K', description: '5K - 10K' },
-        { id: 3, label: '10K-25K', description: '10K - 25K' },
-        { id: 4, label: '25K-50K', description: '25K - 50K' },
-        { id: 5, label: '>50K', description: '50K and Above' },
-      ],
-      subcategories: [
-        { id: 1, name: 'Sofa Sets', icon: '🛋️' },
-        { id: 2, name: 'Beds', icon: '🛏️' },
-        { id: 3, name: 'Dining Tables', icon: '🪑' },
-        { id: 4, name: 'Wardrobes', icon: '🚪' },
-        { id: 5, name: 'Study Tables', icon: '📚' },
-        { id: 6, name: 'Office Furniture', icon: '💼' },
-      ]
-    },
-    electronics: {
-      budgetLabel: 'Electronics By Budget',
-      budgetRanges: [
-        { id: 1, label: '<10K', description: 'Below 10K' },
-        { id: 2, label: '10K-25K', description: '10K - 25K' },
-        { id: 3, label: '25K-50K', description: '25K - 50K' },
-        { id: 4, label: '50K-1L', description: '50K - 1 Lac' },
-        { id: 5, label: '>1L', description: '1 Lac and Above' },
-      ],
-      subcategories: [
-        { id: 1, name: 'Washing Machine', icon: '🧺' },
-        { id: 2, name: 'Refrigerator', icon: '❄️' },
-        { id: 3, name: 'Air Conditioner', icon: '🌬️' },
-        { id: 4, name: 'TV', icon: '📺' },
-        { id: 5, name: 'Camera', icon: '📷' },
-        { id: 6, name: 'Microwave', icon: '📦' },
-      ]
-    },
-    fashion: {
-      budgetLabel: 'Fashion By Budget',
-      budgetRanges: [
-        { id: 1, label: '<500', description: 'Below 500' },
-        { id: 2, label: '500-1K', description: '500 - 1K' },
-        { id: 3, label: '1K-3K', description: '1K - 3K' },
-        { id: 4, label: '3K-5K', description: '3K - 5K' },
-        { id: 5, label: '>5K', description: '5K and Above' },
-      ],
-      subcategories: [
-        { id: 1, name: "Men's Clothing", icon: '👔' },
-        { id: 2, name: "Women's Clothing", icon: '👗' },
-        { id: 3, name: 'Footwear', icon: '👞' },
-        { id: 4, name: 'Watches', icon: '⌚' },
-        { id: 5, name: 'Bags', icon: '👜' },
-        { id: 6, name: 'Accessories', icon: '💍' },
-      ]
-    },
-    books: {
-      budgetLabel: 'Books By Budget',
-      budgetRanges: [
-        { id: 1, label: '<200', description: 'Below 200' },
-        { id: 2, label: '200-500', description: '200 - 500' },
-        { id: 3, label: '500-1K', description: '500 - 1K' },
-        { id: 4, label: '1K-2K', description: '1K - 2K' },
-        { id: 5, label: '>2K', description: '2K and Above' },
-      ],
-      subcategories: [
-        { id: 1, name: 'Textbooks', icon: '📚' },
-        { id: 2, name: 'Novels', icon: '📖' },
-        { id: 3, name: 'Comics', icon: '📰' },
-        { id: 4, name: 'Magazines', icon: '📑' },
-        { id: 5, name: 'Reference', icon: '📕' },
-        { id: 6, name: 'Children Books', icon: '📘' },
-      ]
-    },
-    sports: {
-      budgetLabel: 'Sports By Budget',
-      budgetRanges: [
-        { id: 1, label: '<1K', description: 'Below 1K' },
-        { id: 2, label: '1K-3K', description: '1K - 3K' },
-        { id: 3, label: '3K-5K', description: '3K - 5K' },
-        { id: 4, label: '5K-10K', description: '5K - 10K' },
-        { id: 5, label: '>10K', description: '10K and Above' },
-      ],
-      subcategories: [
-        { id: 1, name: 'Cricket', icon: '🏏' },
-        { id: 2, name: 'Football', icon: '⚽' },
-        { id: 3, name: 'Gym Equipment', icon: '💪' },
-        { id: 4, name: 'Cycling', icon: '🚴' },
-        { id: 5, name: 'Badminton', icon: '🏸' },
-        { id: 6, name: 'Swimming', icon: '🏊' },
-      ]
-    },
-    pets: {
-      budgetLabel: 'Pets By Budget',
-      budgetRanges: [
-        { id: 1, label: '<5K', description: 'Below 5K' },
-        { id: 2, label: '5K-10K', description: '5K - 10K' },
-        { id: 3, label: '10K-25K', description: '10K - 25K' },
-        { id: 4, label: '25K-50K', description: '25K - 50K' },
-        { id: 5, label: '>50K', description: '50K and Above' },
-      ],
-      subcategories: [
-        { id: 1, name: 'Dogs', icon: '🐕' },
-        { id: 2, name: 'Cats', icon: '🐈' },
-        { id: 3, name: 'Birds', icon: '🦜' },
-        { id: 4, name: 'Fish', icon: '🐠' },
-        { id: 5, name: 'Pet Food', icon: '🍖' },
-        { id: 6, name: 'Accessories', icon: '🦴' },
-      ]
-    },
+  const currentCategory = getCategoryBySlug(categorySlug) || categories[0];
+
+  // Fetch products for the current category
+  useEffect(() => {
+    const fetchProducts = async () => {
+      if (!currentCategory) return;
+      
+      try {
+        setLoading(true);
+        setError(null);
+        
+        // Fetch both products and categories from backend
+        const [productsResponse, categoriesResponse] = await Promise.all([
+          apiService.getPublicProducts(1, 100, ''), // Get all products
+          apiService.getPublicCategories(1, 100, '') // Get all categories
+        ]);
+        
+        const fetchedProducts = productsResponse.data.products || [];
+        const fetchedCategories = categoriesResponse.data.categories || [];
+        
+        console.log('Fetched products:', fetchedProducts.length);
+        console.log('Fetched categories:', fetchedCategories.length);
+        console.log('Categories:', fetchedCategories.map(c => ({ 
+          id: c._id, 
+          name: c.name, 
+          product: c.product?.name,
+          productId: c.product?._id,
+          images: c.images?.length || 0,
+          imageUrl: c.images?.[0]?.url
+        })));
+        console.log('All products:', fetchedProducts.map(p => ({ id: p._id, name: p.name })));
+        
+             // Store all data
+             setAllProducts(fetchedProducts);
+             setBackendCategories(fetchedCategories);
+        
+        // Set initial selected product based on URL parameter
+        if (categorySlug && fetchedProducts.length > 0) {
+          const initialProduct = fetchedProducts.find(product => 
+            product.name.toLowerCase().replace(/\s+/g, '-') === categorySlug.toLowerCase()
+          );
+          if (initialProduct) {
+            setSelectedProduct(initialProduct);
+            // Find subcategories for this product
+            const productSubcategories = fetchedCategories.filter(category => 
+              category.product && category.product._id === initialProduct._id
+            );
+            setSubcategories(productSubcategories);
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching products:', err);
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, [currentCategory]);
+
+
+
+
+
+  // Function to show subcategories for selected product
+  const filterProductsByCategory = (product) => {
+    if (!product || !product.name) {
+      // If no product selected, clear subcategories
+      setSelectedProduct(null);
+      setSubcategories([]);
+      return;
+    }
+
+    // Find all categories (subcategories) that belong to this product
+    const productSubcategories = backendCategories.filter(category => {
+      if (!category.product) return false;
+      
+      // Check if this category's product matches the selected product
+      return category.product._id === product._id;
+    });
+
+    console.log('Product selected:', product.name);
+    console.log('Product ID:', product._id);
+    console.log('Subcategories found:', productSubcategories.map(c => ({ 
+      name: c.name, 
+      productId: c.product?._id,
+      productName: c.product?.name 
+    })));
+    
+    setSubcategories(productSubcategories);
+    setSelectedProduct(product);
   };
 
-  const currentData = categoryData[currentCategory.slug] || categoryData.cars;
-
-  const handleCategoryClick = (category) => {
-    setSelectedCategory(category.slug);
-    navigate(`/category/${category.slug}`);
+  // Function to handle sidebar product click
+  const handleSidebarProductClick = (product) => {
+    filterProductsByCategory(product);
   };
 
-  const handleBudgetClick = (budget) => {
-    setSelectedCategory(currentCategory.slug);
-    navigate('/listings', { state: { budget: budget.description } });
-  };
+  // Show loading if category is not found and categories are still loading
+  if (!currentCategory && categories.length === 0) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading categories...</p>
+        </div>
+      </div>
+    );
+  }
 
-  const handleSubcategoryClick = (subcategory) => {
-    setSelectedCategory(currentCategory.slug);
-    navigate('/listings', { state: { subcategory: subcategory.name } });
-  };
-
-  const handleViewAll = () => {
-    setSelectedCategory(currentCategory.slug);
-    navigate('/listings');
-  };
+  // Show error if category is not found
+  if (!currentCategory) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-6xl mb-4">❌</div>
+          <h2 className="text-2xl font-bold mb-4">Category not found</h2>
+          <p className="text-gray-600 mb-6">The category you're looking for doesn't exist.</p>
+          <button
+            onClick={() => navigate('/')}
+            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            Go Home
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-white flex flex-col overflow-x-hidden">
@@ -249,33 +161,71 @@ const CategoryDetail = () => {
           >
             <ChevronLeft size={24} className="text-gray-900" />
           </button>
-          <h1 className="text-xl font-bold text-gray-900">Categories</h1>
+          <h1 className="text-xl font-bold text-gray-900">Products</h1>
         </div>
       </div>
 
       <div className="flex flex-1 overflow-x-hidden">
-        {/* Sidebar - Categories List */}
+        {/* Sidebar - Products List */}
         <div className="w-20 md:w-24 bg-[#f0f4f7] border-r border-gray-200 overflow-y-auto flex-shrink-0">
-          {categories.map((category) => (
+          {loading ? (
+            // Loading skeleton for products
+            <div className="space-y-2 p-2">
+              {[...Array(8)].map((_, index) => (
+                <div key={index} className="animate-pulse">
+                  <div className="w-12 h-12 bg-gray-200 rounded-lg mx-auto mb-1"></div>
+                  <div className="h-2 bg-gray-200 rounded w-3/4 mx-auto"></div>
+                </div>
+              ))}
+            </div>
+          ) : error ? (
+            <div className="p-2 text-center">
+              <div className="text-[8px] text-red-500">Error loading products</div>
+            </div>
+          ) : allProducts.length === 0 ? (
+            <div className="p-2 text-center">
+              <div className="text-[8px] text-gray-500">No products found</div>
+            </div>
+          ) : (
+            // Show main products (main categories) in sidebar
+            allProducts.map((product) => {
+              const primaryImage = product.images?.find(img => img.isPrimary) || product.images?.[0];
+              const isSelected = selectedProduct && selectedProduct._id === product._id;
+              
+              return (
             <button
-              key={category.id}
-              onClick={() => handleCategoryClick(category)}
+                  key={product._id}
+                  onClick={() => handleSidebarProductClick(product)}
               className={`w-full flex flex-col items-center gap-1 py-3 px-1 transition-colors ${
-                category.slug === currentCategory.slug
-                  ? 'bg-white'
+                    isSelected 
+                      ? 'bg-white shadow-sm border-r-2 border-blue-500' 
                   : 'hover:bg-gray-100'
               }`}
             >
-              <img
-                src={imageMap[category.image]}
-                alt={category.name}
-                className="w-9 h-9 md:w-10 md:h-10 object-contain"
-              />
-              <span className="text-[7px] md:text-[8px] font-semibold text-gray-900 text-center leading-tight px-0.5">
-                {category.name}
+                  {primaryImage ? (
+                    <img
+                      src={primaryImage.url}
+                      alt={product.name}
+                      className={`w-9 h-9 md:w-10 md:h-10 object-cover rounded-lg ${
+                        isSelected ? 'ring-2 ring-blue-500' : ''
+                      }`}
+                    />
+                  ) : (
+                    <div className={`w-9 h-9 md:w-10 md:h-10 bg-gray-200 rounded-lg flex items-center justify-center ${
+                      isSelected ? 'ring-2 ring-blue-500' : ''
+                    }`}>
+                      <span className="text-[8px] text-gray-400">📦</span>
+                    </div>
+                  )}
+                  <span className={`text-[7px] md:text-[8px] font-semibold text-center leading-tight px-0.5 line-clamp-2 ${
+                    isSelected ? 'text-blue-600' : 'text-gray-900'
+                  }`}>
+                    {product.name}
               </span>
             </button>
-          ))}
+              );
+            })
+          )}
         </div>
 
         {/* Main Content */}
@@ -291,62 +241,133 @@ const CategoryDetail = () => {
             </div>
           </div>
 
-          {/* By Budget Section */}
+          {/* All Products Section */}
           <div className="px-3 md:px-4 py-3 md:py-4">
-            <h3 className="text-base md:text-lg font-bold text-gray-900 mb-3 md:mb-4">
-              {currentData.budgetLabel}
+            <div className="flex items-center justify-between mb-3 md:mb-4">
+              <h3 className="text-base md:text-lg font-bold text-gray-900">
+                {selectedProduct 
+                  ? `${selectedProduct.name} Categories (${subcategories.length})` 
+                  : 'Select a Product'
+                }
             </h3>
-            
-            <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 md:gap-4">
-              {currentData.budgetRanges.map((budget) => (
-                <button
-                  key={budget.id}
-                  onClick={() => handleBudgetClick(budget)}
-                  className="group flex flex-col items-center py-2.5 md:py-4 bg-white hover:bg-gradient-to-br hover:from-blue-50 hover:to-indigo-50 rounded-xl transition-all duration-200 border-2 border-gray-100 hover:border-blue-400 hover:shadow-lg active:scale-95"
-                >
-                  <div className="w-10 h-10 md:w-16 md:h-16 bg-gradient-to-br from-blue-50 to-indigo-50 group-hover:from-blue-100 group-hover:to-indigo-100 rounded-xl md:rounded-2xl flex items-center justify-center mb-1 md:mb-2 shadow-sm group-hover:shadow-md transition-all duration-200">
-                    <span className="text-xs md:text-base font-black text-blue-600 group-hover:text-blue-700">{budget.label}</span>
-                  </div>
-                  <span className="text-[9px] md:text-xs text-center font-bold text-gray-700 group-hover:text-blue-600 px-1 leading-tight transition-colors duration-200">
-                    {budget.description}
-                  </span>
-                </button>
-              ))}
-              
-              {/* View All Button */}
-              <button
-                onClick={handleViewAll}
-                className="flex flex-col items-center justify-center py-3 md:py-4 bg-gradient-to-br from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 rounded-xl transition-all duration-200 shadow-md hover:shadow-xl active:scale-95"
-              >
-                <div className="w-10 h-10 md:w-16 md:h-16 bg-white/20 backdrop-blur-sm rounded-xl md:rounded-2xl flex items-center justify-center mb-1 md:mb-2">
-                  <ChevronRight size={18} className="text-white md:w-6 md:h-6" strokeWidth={2.5} />
-                </div>
-                <span className="text-[9px] md:text-xs font-black text-white">View All</span>
-              </button>
             </div>
+            
+            {loading ? (
+              <div className="grid grid-cols-4 gap-3 md:gap-4">
+                {[...Array(8)].map((_, index) => (
+                  <div key={index} className="animate-pulse">
+                    <div className="w-full aspect-[3/2] bg-gray-200 rounded-lg mb-2"></div>
+                    <div className="h-3 bg-gray-200 rounded w-3/4 mb-1"></div>
+                    <div className="h-2 bg-gray-200 rounded w-1/2"></div>
+                  </div>
+                ))}
+              </div>
+            ) : error ? (
+              <div className="text-center py-8">
+                <p className="text-red-500 mb-4">Error loading data: {error}</p>
+                <button
+                  onClick={() => window.location.reload()} 
+                  className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+                >
+                  Retry
+                </button>
+              </div>
+            ) : selectedProduct && subcategories.length > 0 ? (
+              // Show subcategories when product is selected
+              <div className="grid grid-cols-4 gap-3 md:gap-4">
+                {subcategories.map((category) => {
+                  const product = category.product;
+                  if (!product) return null;
+                  
+                  const primaryImage = category.images?.find(img => img.isPrimary) || category.images?.[0];
+                  
+                  // Debug image data
+                  console.log(`Category: ${category.name}`, {
+                    hasImages: !!category.images,
+                    imagesLength: category.images?.length || 0,
+                    primaryImage: primaryImage,
+                    imageUrl: primaryImage?.url,
+                    allImages: category.images
+                  });
+                  
+                  // Test image URL accessibility
+                  if (primaryImage && primaryImage.url) {
+                    fetch(primaryImage.url, { method: 'HEAD' })
+                      .then(response => {
+                        console.log(`🔍 Image URL test for ${category.name}:`, {
+                          url: primaryImage.url,
+                          status: response.status,
+                          ok: response.ok
+                        });
+                      })
+                      .catch(error => {
+                        console.error(`🚫 Image URL test failed for ${category.name}:`, error);
+                      });
+                  }
+                  
+                  return (
+              <button
+                      key={category._id}
+                      onClick={() => navigate(`/item/${product._id}`)}
+                      className="group flex flex-col bg-white hover:bg-white rounded-xl transition-all duration-300 shadow-md hover:shadow-lg active:scale-95 overflow-hidden transform hover:-translate-y-1"
+                    >
+                        {/* Category Image */}
+                        <div className="w-full aspect-[3/2] overflow-hidden rounded-t-xl relative">
+                          {primaryImage && primaryImage.url ? (
+                            <img
+                              src={primaryImage.url}
+                              alt={category.name}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                              onLoad={() => {
+                                console.log(`✅ Image loaded successfully: ${category.name} - ${primaryImage.url}`);
+                              }}
+                              onError={(e) => {
+                                console.error(`❌ Image failed to load: ${category.name} - ${primaryImage.url}`);
+                                e.target.style.display = 'none';
+                                // Show fallback
+                                const fallback = e.target.parentElement.querySelector('.image-fallback');
+                                if (fallback) fallback.style.display = 'flex';
+                              }}
+                            />
+                          ) : null}
+                          
+                          {/* Fallback for no image or error */}
+                          <div 
+                            className="image-fallback w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center absolute inset-0"
+                            style={{ display: primaryImage && primaryImage.url ? 'none' : 'flex' }}
+                          >
+                            <div className="text-center">
+                              <div className="text-3xl mb-2">📦</div>
+                              <span className="text-gray-600 text-sm font-medium">{category.name}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                      {/* Category Info */}
+                      <div className="p-2 text-center">
+                        <h4 className="font-medium text-xs text-gray-800 group-hover:text-blue-600 transition-colors duration-300 leading-tight">
+                          {category.name}
+                        </h4>
+                    </div>
+                </button>
+                  );
+                })}
+              </div>
+            ) : selectedProduct && subcategories.length === 0 ? (
+              <div className="text-center py-8">
+                <div className="text-6xl mb-4">📂</div>
+                <h3 className="text-lg font-medium text-gray-700 mb-2">No categories found</h3>
+                <p className="text-gray-500">No categories available for {selectedProduct.name} yet.</p>
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <div className="text-6xl mb-4">👆</div>
+                <h3 className="text-lg font-medium text-gray-700 mb-2">Select a Product</h3>
+                <p className="text-gray-500">Choose a product from the sidebar to view its categories.</p>
+            </div>
+            )}
           </div>
 
-          {/* Subcategories Section */}
-          <div className="px-3 md:px-4 py-3 md:py-4">
-            <h3 className="text-base md:text-lg font-bold text-gray-900 mb-3 md:mb-4">Browse by Type</h3>
-            
-            <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 md:gap-4">
-              {currentData.subcategories.map((subcategory) => (
-                <button
-                  key={subcategory.id}
-                  onClick={() => handleSubcategoryClick(subcategory)}
-                  className="group flex flex-col items-center py-3 md:py-4 bg-white hover:bg-gradient-to-br hover:from-blue-50 hover:to-indigo-50 rounded-xl transition-all duration-200 border-2 border-gray-100 hover:border-blue-400 hover:shadow-lg active:scale-95"
-                >
-                  <div className="w-14 h-14 md:w-16 md:h-16 bg-gradient-to-br from-gray-50 to-gray-100 group-hover:from-blue-100 group-hover:to-indigo-100 rounded-2xl flex items-center justify-center mb-2 shadow-sm group-hover:shadow-md transition-all duration-200">
-                    <span className="text-2xl md:text-3xl">{subcategory.icon}</span>
-                  </div>
-                  <span className="text-[10px] md:text-xs font-bold text-gray-800 group-hover:text-blue-600 text-center leading-tight px-1 transition-colors duration-200">
-                    {subcategory.name}
-                  </span>
-                </button>
-              ))}
-            </div>
-          </div>
         </div>
       </div>
     </div>
@@ -354,4 +375,5 @@ const CategoryDetail = () => {
 };
 
 export default CategoryDetail;
+
 

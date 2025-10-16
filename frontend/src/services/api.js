@@ -702,7 +702,7 @@ class ApiService {
     }
   }
 
-  async getAllCategories(page = 1, limit = 10, status = '', search = '', productId = '') {
+  async getAllCategories(page = 1, limit = 100, status = '', search = '', productId = '') {
     const params = new URLSearchParams({
       page: page.toString(),
       limit: limit.toString(),
@@ -849,6 +849,172 @@ class ApiService {
     const url = `${this.baseURL}/admin/categories/stats`;
     const config = {
       headers: this.getAdminHeaders(),
+    };
+
+    try {
+      const response = await fetch(url, config);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Something went wrong');
+      }
+
+      return data;
+    } catch (error) {
+      console.error('API Request Error:', error);
+      throw error;
+    }
+  }
+
+  // Public Product APIs (for regular users)
+  async getPublicProducts(page = 1, limit = 12, search = '') {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString(),
+    });
+    
+    if (search) params.append('search', search);
+
+    const url = `${this.baseURL}/products?${params.toString()}`;
+    const config = {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    };
+
+    try {
+      const response = await fetch(url, config);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Something went wrong');
+      }
+
+      return data;
+    } catch (error) {
+      console.error('API Request Error:', error);
+      throw error;
+    }
+  }
+
+  async getPublicProduct(productId) {
+    const url = `${this.baseURL}/products/${productId}`;
+    const config = {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    };
+
+    try {
+      const response = await fetch(url, config);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Something went wrong');
+      }
+
+      return data;
+    } catch (error) {
+      console.error('API Request Error:', error);
+      throw error;
+    }
+  }
+
+  async getFeaturedProducts(limit = 8) {
+    const params = new URLSearchParams({
+      limit: limit.toString(),
+    });
+
+    const url = `${this.baseURL}/products/featured?${params.toString()}`;
+    const config = {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    };
+
+    try {
+      const response = await fetch(url, config);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Something went wrong');
+      }
+
+      return data;
+    } catch (error) {
+      console.error('API Request Error:', error);
+      throw error;
+    }
+  }
+
+  // Public Category APIs (for regular users)
+  async getPublicCategories(page = 1, limit = 50, search = '') {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString(),
+    });
+    
+    if (search) params.append('search', search);
+
+    const url = `${this.baseURL}/categories?${params.toString()}`;
+    const config = {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    };
+
+    try {
+      const response = await fetch(url, config);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('API Request Error:', error);
+      if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+        throw new Error('Network error: Unable to connect to server. Please check your internet connection.');
+      }
+      throw error;
+    }
+  }
+
+  async getCategoriesByProduct(productId, page = 1, limit = 20) {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString(),
+    });
+
+    const url = `${this.baseURL}/categories/product/${productId}?${params.toString()}`;
+    const config = {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    };
+
+    try {
+      const response = await fetch(url, config);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Something went wrong');
+      }
+
+      return data;
+    } catch (error) {
+      console.error('API Request Error:', error);
+      throw error;
+    }
+  }
+
+  async getPublicCategory(categoryId) {
+    const url = `${this.baseURL}/categories/${categoryId}`;
+    const config = {
+      headers: {
+        'Content-Type': 'application/json',
+      },
     };
 
     try {

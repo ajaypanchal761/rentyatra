@@ -2,16 +2,67 @@ import { useNavigate } from 'react-router-dom';
 import { useApp } from '../../contexts/AppContext';
 import { useCategories } from '../../contexts/CategoryContext';
 import { ChevronRight } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import AdBanner from './AdBanner';
+import apiService from '../../services/api';
 
 const CategoryGrid = () => {
-  const { categories, setSelectedCategory } = useApp();
-  const { imageMap } = useCategories();
+  const { setSelectedCategory } = useApp();
+  const { categories, fetchCategoriesByProduct, loading: categoriesLoading } = useCategories();
   const navigate = useNavigate();
+  
+  // State for products
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Fetch products from backend
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await apiService.getFeaturedProducts(9); // Get 9 products for desktop grid
+        setProducts(response.data.products || []);
+      } catch (err) {
+        console.error('Error fetching products:', err);
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, []);
+
+  const handleProductClick = async (product) => {
+    try {
+      // Fetch categories for this product
+      const productCategories = await fetchCategoriesByProduct(product._id);
+      
+      if (productCategories.length > 0) {
+        // If product has categories, show the first category
+        const firstCategory = productCategories[0];
+        setSelectedCategory(firstCategory._id);
+        // Use category slug for navigation
+        const categorySlug = firstCategory.name.toLowerCase().replace(/\s+/g, '-');
+        navigate(`/category/${categorySlug}`);
+      } else {
+        // If no categories, navigate to product detail
+        navigate(`/item/${product._id}`);
+      }
+    } catch (error) {
+      console.error('Error fetching categories for product:', error);
+      // Fallback to product detail page
+      navigate(`/item/${product._id}`);
+    }
+  };
 
   const handleCategoryClick = (category) => {
-    setSelectedCategory(category.slug);
-    navigate(`/category/${category.slug}`);
+    setSelectedCategory(category.id);
+    // Use category slug for navigation
+    const categorySlug = category.name.toLowerCase().replace(/\s+/g, '-');
+    navigate(`/category/${categorySlug}`);
   };
 
   const handleSeeAll = () => {
@@ -32,11 +83,11 @@ const CategoryGrid = () => {
           <AdBanner />
         </div>
 
-        {/* Desktop Categories - 9 Columns Grid */}
+        {/* Desktop Products - 9 Columns Grid */}
         <div className="hidden md:block">
           {/* Header with View All Button */}
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-lg lg:text-xl font-bold text-gray-900">Browse Categories</h2>
+            <h2 className="text-lg lg:text-xl font-bold text-gray-900">Featured Products</h2>
             <button
               onClick={handleSeeAll}
               className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white rounded-lg transition-all duration-200 shadow-md hover:shadow-lg"
@@ -46,105 +97,165 @@ const CategoryGrid = () => {
             </button>
           </div>
           
-          <div className="grid grid-cols-9 gap-2 lg:gap-3">
-            {categories.map((category) => {
-              return (
-                <button
-                  key={category.id}
-                  onClick={() => handleCategoryClick(category)}
-                  className="group relative flex flex-col items-center transition-all duration-200 hover:-translate-y-1 max-w-[90px] mx-auto"
-                >
-                  {/* Hover gradient background */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
-                  
-                  <div className="relative w-full">
-                    {/* Image Container - Compact */}
-                    <div className="w-full aspect-square rounded-lg overflow-hidden bg-white mb-1.5 flex items-center justify-center shadow-sm group-hover:shadow-lg transition-all duration-200 border border-gray-100 group-hover:border-blue-200 p-2">
-                      <img
-                        src={imageMap[category.image]}
-                        alt={category.name}
-                        className="object-contain group-hover:scale-105 transition-transform duration-200 w-full h-full"
-                        style={{ maxWidth: '90%', maxHeight: '90%' }}
-                      />
-                    </div>
+          {loading ? (
+            <div className="grid grid-cols-9 gap-2 lg:gap-3">
+              {[...Array(9)].map((_, index) => (
+                <div key={index} className="animate-pulse">
+                  <div className="w-full aspect-square bg-gray-200 rounded-lg mb-1.5"></div>
+                  <div className="h-3 bg-gray-200 rounded w-3/4 mx-auto"></div>
+                </div>
+              ))}
+            </div>
+          ) : error ? (
+            <div className="text-center py-8">
+              <p className="text-red-500 mb-4">Error loading products: {error}</p>
+              <button 
+                onClick={() => window.location.reload()} 
+                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+              >
+                Retry
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-9 gap-2 lg:gap-3">
+              {products.map((product) => {
+                const primaryImage = product.images?.find(img => img.isPrimary) || product.images?.[0];
+                return (
+                  <button
+                    key={product._id}
+                    onClick={() => handleProductClick(product)}
+                    className="group relative flex flex-col items-center transition-all duration-200 hover:-translate-y-1 max-w-[90px] mx-auto"
+                  >
+                    {/* Hover gradient background */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                     
-                    {/* Category Name */}
-                    <div className="text-center px-1">
-                      <h3 className="font-semibold text-xs text-gray-800 group-hover:text-blue-600 line-clamp-1 tracking-tight transition-colors duration-200">
-                        {category.name}
-                      </h3>
-                    </div>
+                    <div className="relative w-full">
+                      {/* Image Container - Compact */}
+                      <div className="w-full aspect-square rounded-lg overflow-hidden bg-white mb-1.5 flex items-center justify-center shadow-sm group-hover:shadow-lg transition-all duration-200 border border-gray-100 group-hover:border-blue-200 p-2">
+                        {primaryImage ? (
+                          <img
+                            src={primaryImage.url}
+                            alt={product.name}
+                            className="object-cover group-hover:scale-105 transition-transform duration-200 w-full h-full rounded"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                            <span className="text-gray-400 text-xs">No Image</span>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Product Name */}
+                      <div className="text-center px-1">
+                        <h3 className="font-semibold text-xs text-gray-800 group-hover:text-blue-600 line-clamp-1 tracking-tight transition-colors duration-200">
+                          {product.name}
+                        </h3>
+                      </div>
 
-                    {/* Subtle indicator badge */}
-                    <div className="absolute top-1 right-1 w-1.5 h-1.5 bg-blue-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
+                      {/* Subtle indicator badge */}
+                      <div className="absolute top-1 right-1 w-1.5 h-1.5 bg-blue-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {/* Mobile Grid - 2 rows, synchronized horizontal scroll */}
         <div className="md:hidden overflow-x-auto hide-scrollbar">
-          <div 
-            className="grid grid-rows-2 auto-cols-max gap-x-1.5 gap-y-2 pb-2" 
-            style={{ 
-              gridAutoFlow: 'column',
-              width: 'max-content'
-            }}
-          >
-            {categories.map((category) => {
-              return (
-                <button
-                  key={category.id}
-                  onClick={() => handleCategoryClick(category)}
-                  className="flex flex-col items-center active:scale-95 transition-all"
-                  style={{ width: '62px' }}
-                >
-                  {/* Image Container with Shadow and Background */}
-                  <div 
-                    className="w-full rounded-lg overflow-hidden bg-gray-100 mb-1 flex items-center justify-center"
-                    style={{ 
-                      height: '58px',
-                      boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)'
-                    }}
-                  >
-                    <img
-                      src={imageMap[category.image]}
-                      alt={category.name}
-                      className="object-contain"
-                      style={{ width: '48px', height: '48px' }}
-                    />
-                  </div>
-                  {/* Text Container - No background */}
-                  <div className="w-full px-0.5 text-center">
-                    <span className="text-[9px] font-bold text-gray-800 leading-snug line-clamp-2 block tracking-tight">
-                      {category.name}
-                    </span>
-                  </div>
-                </button>
-              );
-            })}
-            
-            {/* See All Card */}
-            <button
-              onClick={handleSeeAll}
-              className="flex flex-col items-center justify-center active:scale-95 transition-all"
-              style={{ width: '62px', gridRow: 'span 2' }}
+          {loading ? (
+            <div 
+              className="grid grid-rows-2 auto-cols-max gap-x-1.5 gap-y-2 pb-2" 
+              style={{ 
+                gridAutoFlow: 'column',
+                width: 'max-content'
+              }}
             >
-              <div 
-                className="w-full h-full rounded-lg overflow-hidden bg-gradient-to-br from-blue-50 to-blue-100 flex flex-col items-center justify-center gap-1.5"
-                style={{ 
-                  boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)'
-                }}
+              {[...Array(8)].map((_, index) => (
+                <div key={index} className="animate-pulse" style={{ width: '62px' }}>
+                  <div className="w-full h-[58px] bg-gray-200 rounded-lg mb-1"></div>
+                  <div className="h-2 bg-gray-200 rounded w-3/4 mx-auto"></div>
+                </div>
+              ))}
+            </div>
+          ) : error ? (
+            <div className="text-center py-4">
+              <p className="text-red-500 text-sm mb-2">Error loading products</p>
+              <button 
+                onClick={() => window.location.reload()} 
+                className="px-3 py-1 bg-blue-500 text-white text-xs rounded"
               >
-                <ChevronRight size={24} className="text-blue-600" strokeWidth={2.5} />
-                <span className="text-[9px] font-bold text-blue-600">
-                  See All
-                </span>
-              </div>
-            </button>
-          </div>
+                Retry
+              </button>
+            </div>
+          ) : (
+            <div 
+              className="grid grid-rows-2 auto-cols-max gap-x-1.5 gap-y-2 pb-2" 
+              style={{ 
+                gridAutoFlow: 'column',
+                width: 'max-content'
+              }}
+            >
+              {products.slice(0, 8).map((product) => {
+                const primaryImage = product.images?.find(img => img.isPrimary) || product.images?.[0];
+                return (
+                  <button
+                    key={product._id}
+                    onClick={() => handleProductClick(product)}
+                    className="flex flex-col items-center active:scale-95 transition-all"
+                    style={{ width: '62px' }}
+                  >
+                    {/* Image Container with Shadow and Background */}
+                    <div 
+                      className="w-full rounded-lg overflow-hidden bg-gray-100 mb-1 flex items-center justify-center"
+                      style={{ 
+                        height: '58px',
+                        boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)'
+                      }}
+                    >
+                      {primaryImage ? (
+                        <img
+                          src={primaryImage.url}
+                          alt={product.name}
+                          className="object-cover w-full h-full"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                          <span className="text-gray-400 text-[8px]">No Image</span>
+                        </div>
+                      )}
+                    </div>
+                    {/* Text Container - No background */}
+                    <div className="w-full px-0.5 text-center">
+                      <span className="text-[9px] font-bold text-gray-800 leading-snug line-clamp-2 block tracking-tight">
+                        {product.name}
+                      </span>
+                    </div>
+                  </button>
+                );
+              })}
+              
+              {/* See All Card */}
+              <button
+                onClick={handleSeeAll}
+                className="flex flex-col items-center justify-center active:scale-95 transition-all"
+                style={{ width: '62px', gridRow: 'span 2' }}
+              >
+                <div 
+                  className="w-full h-full rounded-lg overflow-hidden bg-gradient-to-br from-blue-50 to-blue-100 flex flex-col items-center justify-center gap-1.5"
+                  style={{ 
+                    boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)'
+                  }}
+                >
+                  <ChevronRight size={24} className="text-blue-600" strokeWidth={2.5} />
+                  <span className="text-[9px] font-bold text-blue-600">
+                    See All
+                  </span>
+                </div>
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

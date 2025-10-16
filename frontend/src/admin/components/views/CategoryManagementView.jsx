@@ -48,7 +48,7 @@ const CategoryManagementView = () => {
     const fetchCategories = async () => {
         setLoading(true);
         try {
-            const response = await apiService.getAllCategories();
+            const response = await apiService.getAllCategories(); // Get all categories (default limit is now 100)
             setCategories(response.data.categories);
         } catch (err) {
             setError(err.message);
