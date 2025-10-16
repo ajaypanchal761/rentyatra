@@ -22,7 +22,7 @@ const CategoryGrid = () => {
       try {
         setLoading(true);
         setError(null);
-        const response = await apiService.getFeaturedProducts(9); // Get 9 products for desktop grid
+        const response = await apiService.getFeaturedProducts(12); // Get 12 products for 6x2 grid
         setProducts(response.data.products || []);
       } catch (err) {
         console.error('Error fetching products:', err);
@@ -37,22 +37,11 @@ const CategoryGrid = () => {
 
   const handleProductClick = async (product) => {
     try {
-      // Fetch categories for this product
-      const productCategories = await fetchCategoriesByProduct(product._id);
-      
-      if (productCategories.length > 0) {
-        // If product has categories, show the first category
-        const firstCategory = productCategories[0];
-        setSelectedCategory(firstCategory._id);
-        // Use category slug for navigation
-        const categorySlug = firstCategory.name.toLowerCase().replace(/\s+/g, '-');
-        navigate(`/category/${categorySlug}`);
-      } else {
-        // If no categories, navigate to product detail
-        navigate(`/item/${product._id}`);
-      }
+      // Navigate to category page with product ID as query parameter
+      // This will allow the category page to automatically select this product
+      navigate(`/category?productId=${product._id}`);
     } catch (error) {
-      console.error('Error fetching categories for product:', error);
+      console.error('Error navigating to product:', error);
       // Fallback to product detail page
       navigate(`/item/${product._id}`);
     }
@@ -66,8 +55,16 @@ const CategoryGrid = () => {
   };
 
   const handleSeeAll = () => {
-    setSelectedCategory(null);
-    navigate('/listings');
+    // Navigate to the first available category or a general products page
+    if (categories && categories.length > 0) {
+      const firstCategory = categories[0];
+      setSelectedCategory(firstCategory.id);
+      navigate(`/category/${firstCategory.slug}`);
+    } else {
+      // Fallback to listings if no categories available
+      setSelectedCategory(null);
+      navigate('/listings');
+    }
   };
 
   return (
@@ -83,7 +80,7 @@ const CategoryGrid = () => {
           <AdBanner />
         </div>
 
-        {/* Desktop Products - 9 Columns Grid */}
+        {/* Desktop Products - 6x2 Grid */}
         <div className="hidden md:block">
           {/* Header with View All Button */}
           <div className="flex items-center justify-between mb-3">
@@ -98,10 +95,10 @@ const CategoryGrid = () => {
           </div>
           
           {loading ? (
-            <div className="grid grid-cols-9 gap-2 lg:gap-3">
-              {[...Array(9)].map((_, index) => (
+            <div className="grid grid-cols-6 gap-3 lg:gap-4">
+              {[...Array(12)].map((_, index) => (
                 <div key={index} className="animate-pulse">
-                  <div className="w-full aspect-square bg-gray-200 rounded-lg mb-1.5"></div>
+                  <div className="w-full aspect-square bg-gray-200 rounded-lg mb-2"></div>
                   <div className="h-3 bg-gray-200 rounded w-3/4 mx-auto"></div>
                 </div>
               ))}
@@ -117,21 +114,21 @@ const CategoryGrid = () => {
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-9 gap-2 lg:gap-3">
-              {products.map((product) => {
+            <div className="grid grid-cols-6 gap-3 lg:gap-4">
+              {products.slice(0, 12).map((product) => {
                 const primaryImage = product.images?.find(img => img.isPrimary) || product.images?.[0];
                 return (
                   <button
                     key={product._id}
                     onClick={() => handleProductClick(product)}
-                    className="group relative flex flex-col items-center transition-all duration-200 hover:-translate-y-1 max-w-[90px] mx-auto"
+                    className="group relative flex flex-col items-center transition-all duration-200 hover:-translate-y-1 max-w-[120px] mx-auto"
                   >
                     {/* Hover gradient background */}
                     <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                     
                     <div className="relative w-full">
-                      {/* Image Container - Compact */}
-                      <div className="w-full aspect-square rounded-lg overflow-hidden bg-white mb-1.5 flex items-center justify-center shadow-sm group-hover:shadow-lg transition-all duration-200 border border-gray-100 group-hover:border-blue-200 p-2">
+                      {/* Image Container - Larger for 6x2 grid */}
+                      <div className="w-full aspect-square rounded-lg overflow-hidden bg-white mb-2 flex items-center justify-center shadow-sm group-hover:shadow-lg transition-all duration-200 border border-gray-100 group-hover:border-blue-200 p-2">
                         {primaryImage ? (
                           <img
                             src={primaryImage.url}
@@ -147,7 +144,7 @@ const CategoryGrid = () => {
                       
                       {/* Product Name */}
                       <div className="text-center px-1">
-                        <h3 className="font-semibold text-xs text-gray-800 group-hover:text-blue-600 line-clamp-1 tracking-tight transition-colors duration-200">
+                        <h3 className="font-semibold text-sm text-gray-800 group-hover:text-blue-600 line-clamp-2 tracking-tight transition-colors duration-200">
                           {product.name}
                         </h3>
                       </div>
@@ -162,22 +159,26 @@ const CategoryGrid = () => {
           )}
         </div>
 
-        {/* Mobile Grid - 2 rows, synchronized horizontal scroll */}
+        {/* Mobile Grid - 6x2 Grid with horizontal scroll */}
         <div className="md:hidden overflow-x-auto hide-scrollbar">
           {loading ? (
             <div 
-              className="grid grid-rows-2 auto-cols-max gap-x-1.5 gap-y-2 pb-2" 
+              className="grid grid-rows-2 auto-cols-max gap-x-2 gap-y-2 pb-2" 
               style={{ 
                 gridAutoFlow: 'column',
                 width: 'max-content'
               }}
             >
-              {[...Array(8)].map((_, index) => (
-                <div key={index} className="animate-pulse" style={{ width: '62px' }}>
-                  <div className="w-full h-[58px] bg-gray-200 rounded-lg mb-1"></div>
+              {[...Array(12)].map((_, index) => (
+                <div key={index} className="animate-pulse" style={{ width: '70px' }}>
+                  <div className="w-full h-[65px] bg-gray-200 rounded-lg mb-1"></div>
                   <div className="h-2 bg-gray-200 rounded w-3/4 mx-auto"></div>
                 </div>
               ))}
+              {/* See All Card Skeleton */}
+              <div className="animate-pulse" style={{ width: '70px', gridRow: 'span 2' }}>
+                <div className="w-full h-full bg-gray-200 rounded-lg"></div>
+              </div>
             </div>
           ) : error ? (
             <div className="text-center py-4">
@@ -191,26 +192,26 @@ const CategoryGrid = () => {
             </div>
           ) : (
             <div 
-              className="grid grid-rows-2 auto-cols-max gap-x-1.5 gap-y-2 pb-2" 
+              className="grid grid-rows-2 auto-cols-max gap-x-2 gap-y-2 pb-2" 
               style={{ 
                 gridAutoFlow: 'column',
                 width: 'max-content'
               }}
             >
-              {products.slice(0, 8).map((product) => {
+              {products.slice(0, 12).map((product) => {
                 const primaryImage = product.images?.find(img => img.isPrimary) || product.images?.[0];
                 return (
                   <button
                     key={product._id}
                     onClick={() => handleProductClick(product)}
                     className="flex flex-col items-center active:scale-95 transition-all"
-                    style={{ width: '62px' }}
+                    style={{ width: '70px' }}
                   >
                     {/* Image Container with Shadow and Background */}
                     <div 
                       className="w-full rounded-lg overflow-hidden bg-gray-100 mb-1 flex items-center justify-center"
                       style={{ 
-                        height: '58px',
+                        height: '65px',
                         boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)'
                       }}
                     >
@@ -226,9 +227,9 @@ const CategoryGrid = () => {
                         </div>
                       )}
                     </div>
-                    {/* Text Container - No background */}
+                    {/* Text Container */}
                     <div className="w-full px-0.5 text-center">
-                      <span className="text-[9px] font-bold text-gray-800 leading-snug line-clamp-2 block tracking-tight">
+                      <span className="text-[8px] font-bold text-gray-800 leading-snug line-clamp-2 block tracking-tight">
                         {product.name}
                       </span>
                     </div>
@@ -236,11 +237,11 @@ const CategoryGrid = () => {
                 );
               })}
               
-              {/* See All Card */}
+              {/* See All Card - slides with the grid */}
               <button
                 onClick={handleSeeAll}
                 className="flex flex-col items-center justify-center active:scale-95 transition-all"
-                style={{ width: '62px', gridRow: 'span 2' }}
+                style={{ width: '70px', gridRow: 'span 2' }}
               >
                 <div 
                   className="w-full h-full rounded-lg overflow-hidden bg-gradient-to-br from-blue-50 to-blue-100 flex flex-col items-center justify-center gap-1.5"
@@ -248,8 +249,8 @@ const CategoryGrid = () => {
                     boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)'
                   }}
                 >
-                  <ChevronRight size={24} className="text-blue-600" strokeWidth={2.5} />
-                  <span className="text-[9px] font-bold text-blue-600">
+                  <ChevronRight size={20} className="text-blue-600" strokeWidth={2.5} />
+                  <span className="text-[8px] font-bold text-blue-600">
                     See All
                   </span>
                 </div>

@@ -1,5 +1,4 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { useCategories } from './CategoryContext';
 
 const AppContext = createContext(null);
 
@@ -12,9 +11,20 @@ export const useApp = () => {
 };
 
 export const AppProvider = ({ children }) => {
-  // Get dynamic categories from CategoryContext
-  const categoryContext = useCategories();
-  const categories = categoryContext.categories;
+  // Static categories for now - can be replaced with dynamic data later
+  const categories = [
+    { id: 'cars', name: 'Cars', icon: '🚗' },
+    { id: 'bikes', name: 'Bikes', icon: '🏍️' },
+    { id: 'mobiles', name: 'Mobiles', icon: '📱' },
+    { id: 'properties', name: 'Properties', icon: '🏠' },
+    { id: 'jobs', name: 'Jobs', icon: '💼' },
+    { id: 'furniture', name: 'Furniture', icon: '🪑' },
+    { id: 'electronics', name: 'Electronics', icon: '📺' },
+    { id: 'fashion', name: 'Fashion', icon: '👕' },
+    { id: 'books', name: 'Books', icon: '📚' },
+    { id: 'sports', name: 'Sports', icon: '⚽' },
+    { id: 'pets', name: 'Pets', icon: '🐕' }
+  ];
   
   const [items, setItems] = useState([]);
   const [favorites, setFavorites] = useState([]);

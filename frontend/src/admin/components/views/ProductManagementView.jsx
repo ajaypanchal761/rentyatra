@@ -116,6 +116,9 @@ const ProductManagementView = () => {
         e.preventDefault();
         setLoading(true);
         setError('');
+        
+        // Show progress message
+        console.log('Starting product upload...');
 
         try {
             // Validate form data
@@ -146,7 +149,21 @@ const ProductManagementView = () => {
             
         } catch (err) {
             console.error('Error adding product:', err);
-            setError(err.message || 'Failed to add product. Please try again.');
+            
+            // Provide more specific error messages based on error type
+            let errorMessage = 'Failed to add product. Please try again.';
+            
+            if (err.message.includes('timeout')) {
+                errorMessage = 'Upload timeout - Please try again with smaller files or check your internet connection.';
+            } else if (err.message.includes('Network error')) {
+                errorMessage = 'Network error - Please check your internet connection and try again.';
+            } else if (err.message.includes('Server error')) {
+                errorMessage = 'Server error - Please try again later or contact support.';
+            } else if (err.message) {
+                errorMessage = err.message;
+            }
+            
+            setError(errorMessage);
         } finally {
             setLoading(false);
         }

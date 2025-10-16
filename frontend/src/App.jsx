@@ -59,8 +59,8 @@ function AppContent() {
     );
   }
   
-  const hideNavbar = location.pathname.startsWith('/category/');
-  const hideFooter = location.pathname === '/' || location.pathname.startsWith('/category/');
+  const hideNavbar = location.pathname.startsWith('/category');
+  const hideFooter = location.pathname === '/' || location.pathname.startsWith('/category');
   
   // Hide navbars on auth pages and dashboard
   const isAuthPage = location.pathname === '/login' || location.pathname === '/signup';
@@ -82,6 +82,7 @@ function AppContent() {
           {/* Public Routes */}
           <Route path="/" element={<Home />} />
           <Route path="/listings" element={<Listings />} />
+          <Route path="/category" element={<CategoryDetail />} />
           <Route path="/category/:categorySlug" element={<CategoryDetail />} />
           <Route path="/item/:id" element={<ItemDetail />} />
           

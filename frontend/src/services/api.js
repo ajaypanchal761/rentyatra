@@ -1,6 +1,6 @@
 // API Base URL - with fallback for development and production
 const API_BASE_URL = import.meta.env.VITE_API_URL || 
-  (import.meta.env.DEV ? 'http://localhost:5000/api' : 'http://localhost:5000/api'); // Temporarily use local for both dev and prod until CORS is fixed
+  (import.meta.env.DEV ? 'http://localhost:5000/api' : 'https://your-production-api.com/api');
 
 // API Service Class
 class ApiService {
@@ -8,6 +8,21 @@ class ApiService {
     this.baseURL = API_BASE_URL;
     this.token = localStorage.getItem('token');
     this.adminToken = localStorage.getItem('adminToken');
+    this.timeout = 60000; // 60 seconds timeout for file uploads
+    this.isDev = import.meta.env.DEV;
+  }
+
+  // Conditional logging for development only
+  log(...args) {
+    if (this.isDev) {
+      console.log(...args);
+    }
+  }
+
+  logError(...args) {
+    if (this.isDev) {
+      console.error(...args);
+    }
   }
 
   // Set authentication token
@@ -27,6 +42,27 @@ class ApiService {
       localStorage.setItem('adminToken', token);
     } else {
       localStorage.removeItem('adminToken');
+    }
+  }
+
+  // Timeout utility for fetch requests
+  async fetchWithTimeout(url, options, timeoutMs = this.timeout) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+    
+    try {
+      const response = await fetch(url, {
+        ...options,
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+      return response;
+    } catch (error) {
+      clearTimeout(timeoutId);
+      if (error.name === 'AbortError') {
+        throw new Error('Request Timeout');
+      }
+      throw error;
     }
   }
 
@@ -136,7 +172,7 @@ class ApiService {
     };
 
     try {
-      const response = await fetch(url, config);
+      const response = await this.fetchWithTimeout(url, config, 120000); // 2 minutes for file uploads
       const data = await response.json();
 
       if (!response.ok) {
@@ -146,6 +182,14 @@ class ApiService {
       return data;
     } catch (error) {
       console.error('File Upload Error:', error);
+      
+      // Provide more specific error messages
+      if (error.message === 'Request Timeout') {
+        throw new Error('Upload timeout - Please try again with smaller files or check your internet connection');
+      } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        throw new Error('Network error - Please check your internet connection');
+      }
+      
       throw error;
     }
   }
@@ -475,7 +519,7 @@ class ApiService {
         console.log(key, value);
       }
       
-      const response = await fetch(url, config);
+      const response = await this.fetchWithTimeout(url, config, 120000); // 2 minutes for file uploads
       console.log('Response status:', response.status);
       console.log('Response headers:', response.headers);
       
@@ -494,6 +538,14 @@ class ApiService {
         message: error.message,
         stack: error.stack
       });
+      
+      // Provide more specific error messages
+      if (error.message === 'Request Timeout') {
+        throw new Error('Upload timeout - Please try again with smaller files or check your internet connection');
+      } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        throw new Error('Network error - Please check your internet connection');
+      }
+      
       throw error;
     }
   }
@@ -578,7 +630,7 @@ class ApiService {
         console.log(key, value);
       }
       
-      const response = await fetch(url, config);
+      const response = await this.fetchWithTimeout(url, config, 120000); // 2 minutes for file uploads
       console.log('Update response status:', response.status);
       
       const data = await response.json();
@@ -591,6 +643,14 @@ class ApiService {
       return data;
     } catch (error) {
       console.error('Update Product Error:', error);
+      
+      // Provide more specific error messages
+      if (error.message === 'Request Timeout') {
+        throw new Error('Update timeout - Please try again with smaller files or check your internet connection');
+      } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        throw new Error('Network error - Please check your internet connection');
+      }
+      
       throw error;
     }
   }
