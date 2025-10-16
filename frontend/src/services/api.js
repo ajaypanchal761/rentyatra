@@ -1,5 +1,6 @@
-// API Base URL
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+// API Base URL - with fallback for development and production
+const API_BASE_URL = import.meta.env.VITE_API_URL || 
+  (import.meta.env.DEV ? 'http://localhost:5000/api' : 'https://rentyatra-1.onrender.com/api');
 
 // API Service Class
 class ApiService {
@@ -88,17 +89,39 @@ class ApiService {
       ...options,
     };
 
+    console.log('🌐 Making API request to:', url);
+    console.log('📋 Request config:', config);
+
     try {
       const response = await fetch(url, config);
-      const data = await response.json();
-
+      
+      console.log('📡 Response status:', response.status);
+      console.log('📡 Response headers:', response.headers);
+      
       if (!response.ok) {
-        throw new Error(data.message || 'Something went wrong');
+        let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorMessage;
+        } catch (jsonError) {
+          console.warn('Could not parse error response as JSON');
+        }
+        throw new Error(errorMessage);
       }
 
+      const data = await response.json();
+      console.log('✅ API Response:', data);
       return data;
     } catch (error) {
-      console.error('API Request Error:', error);
+      console.error('❌ API Request Error:', error);
+      
+      // Provide more specific error messages
+      if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+        const networkError = new Error('Network error: Unable to connect to server. Please check your internet connection and ensure the backend server is running.');
+        networkError.originalError = error;
+        throw networkError;
+      }
+      
       throw error;
     }
   }
@@ -932,17 +955,23 @@ class ApiService {
       },
     };
 
+    console.log('🌐 Fetching featured products from:', url);
+
     try {
       const response = await fetch(url, config);
-      const data = await response.json();
-
+      
       if (!response.ok) {
-        throw new Error(data.message || 'Something went wrong');
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
-
+      
+      const data = await response.json();
+      console.log('✅ Featured products response:', data);
       return data;
     } catch (error) {
-      console.error('API Request Error:', error);
+      console.error('❌ Error fetching featured products:', error);
+      if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+        throw new Error('Network error: Unable to connect to server. Please check your internet connection.');
+      }
       throw error;
     }
   }
