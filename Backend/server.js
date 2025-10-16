@@ -37,8 +37,8 @@ const corsOptions = {
     const allowedOrigins = [
       'http://localhost:3000',
       'http://localhost:5173',
-      'https://rentyatra.onrender.com',
-      'https://rentyatra-frontend.onrender.com',
+      'https://rentyatra-1.onrender.com',
+    
       process.env.FRONTEND_URL,
       process.env.CORS_ORIGIN
     ].filter(Boolean); // Remove undefined values
