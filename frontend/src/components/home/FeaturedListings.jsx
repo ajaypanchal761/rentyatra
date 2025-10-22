@@ -1,20 +1,90 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, Heart } from 'lucide-react';
+import { MapPin, Heart, Loader2 } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 import Card from '../common/Card';
 import Button from '../common/Button';
 import StarRating from '../common/StarRating';
 import ImageCarousel from '../common/ImageCarousel';
 import { format } from 'date-fns';
+import apiService from '../../services/api';
 
 const FeaturedListings = () => {
-  const { items, toggleFavorite, isFavorite, getAverageRating, getReviewsCount, setSelectedCategory } = useApp();
+  const { toggleFavorite, isFavorite, getAverageRating, getReviewsCount, setSelectedCategory } = useApp();
   const navigate = useNavigate();
   const [animatingHeart, setAnimatingHeart] = useState(null);
+  const [featuredItems, setFeaturedItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  // Show all products in featured listings
-  const featuredItems = items;
+  // Fetch featured rental requests for the homepage
+  useEffect(() => {
+    const fetchFeaturedListings = async () => {
+      try {
+        setLoading(true);
+        setError('');
+        
+        // Fetch featured rental requests using the public API
+        const response = await apiService.getFeaturedRentalRequests(8);
+
+        if (response.success) {
+          console.log('Featured rental requests data:', response.data.requests);
+          
+          // Transform rental requests to match the expected format
+          const transformedListings = response.data.requests.map(request => {
+            console.log('Processing request:', request);
+            
+            // Use address if available, otherwise fallback to city, state
+            let location = 'Location not specified';
+            if (request.location?.address) {
+              location = request.location.address;
+            } else if (request.location?.city && request.location?.state && 
+                      request.location.city !== 'Unknown' && request.location.state !== 'Unknown') {
+              location = `${request.location.city}, ${request.location.state}`;
+            }
+            
+            return {
+              id: request._id,
+              title: request.title,
+              description: request.description,
+              price: request.price?.amount || 0,
+              location: location,
+              images: request.images ? (() => {
+                // Sort images to put primary image first
+                const sortedImages = [...request.images].sort((a, b) => {
+                  if (a.isPrimary && !b.isPrimary) return -1;
+                  if (!a.isPrimary && b.isPrimary) return 1;
+                  return 0;
+                });
+                return sortedImages.map(img => img.url);
+              })() : [],
+              video: request.video?.url || null,
+              postedDate: request.createdAt,
+              category: request.category?.name || 'General',
+              product: request.product?.name || 'General',
+              condition: 'Good',
+              owner: request.user,
+              averageRating: 0,
+              totalReviews: 0,
+              isBoosted: false
+            };
+          });
+          
+          console.log('Transformed listings:', transformedListings);
+          setFeaturedItems(transformedListings);
+        } else {
+          setError('Failed to load featured listings');
+        }
+      } catch (error) {
+        console.error('Error fetching featured listings:', error);
+        setError('Failed to load featured listings');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchFeaturedListings();
+  }, []);
 
   const handleItemClick = (itemId) => {
     navigate(`/item/${itemId}`);
@@ -50,9 +120,21 @@ const FeaturedListings = () => {
           </button>
         </div>
 
-        {featuredItems.length === 0 ? (
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="animate-spin text-blue-600 mr-3" size={24} />
+            <p className="text-gray-600">Loading featured listings...</p>
+          </div>
+        ) : error ? (
           <div className="text-center py-12">
-            <p className="text-gray-500 text-lg">No items available yet</p>
+            <p className="text-red-500 text-lg mb-4">{error}</p>
+            <Button onClick={() => window.location.reload()}>
+              Try Again
+            </Button>
+          </div>
+        ) : featuredItems.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-gray-500 text-lg">No approved listings available yet</p>
             <Button className="mt-4" onClick={() => navigate('/post-ad')}>
               Post the First Ad
             </Button>
@@ -99,22 +181,22 @@ const FeaturedListings = () => {
                       </p>
                       
                       {/* Rating */}
-                      {getReviewsCount(item.id) > 0 && (
+                      {item.totalReviews > 0 && (
                         <div className="flex items-center gap-2 mb-2">
                           <StarRating 
-                            rating={getAverageRating(item.id)} 
+                            rating={item.averageRating} 
                             size={14}
                             showNumber={false}
                             className="sm:hidden"
                           />
                           <StarRating 
-                            rating={getAverageRating(item.id)} 
+                            rating={item.averageRating} 
                             size={16}
                             showNumber={true}
                             className="hidden sm:flex"
                           />
                           <span className="text-[10px] sm:text-xs text-gray-500">
-                            ({getReviewsCount(item.id)})
+                            ({item.totalReviews})
                           </span>
                         </div>
                       )}

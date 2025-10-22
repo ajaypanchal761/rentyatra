@@ -4,8 +4,11 @@ import { Play } from 'lucide-react';
 const ImageCarousel = ({ images = [], video = null, className = '' }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   
-  // Combine video and images into one array
-  const media = video ? [{ type: 'video', src: video }, ...images.map(img => ({ type: 'image', src: img }))] : images.map(img => ({ type: 'image', src: img }));
+  // Prioritize images over video - put images first, then video
+  const media = [
+    ...images.map(img => ({ type: 'image', src: img })),
+    ...(video ? [{ type: 'video', src: video }] : [])
+  ];
   
   const totalMedia = media.length;
 
@@ -44,7 +47,7 @@ const ImageCarousel = ({ images = [], video = null, className = '' }) => {
       ) : (
         <img
           src={currentMedia.src}
-          alt={`Media ${currentIndex + 1}`}
+          alt={`Rental listing image ${currentIndex + 1}`}
           className="w-full h-full object-cover cursor-pointer"
           onClick={handleImageClick}
         />

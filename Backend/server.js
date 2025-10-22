@@ -25,7 +25,9 @@ const productRoutes = require('./routes/productRoutes');
 const categoryRoutes = require('./routes/categoryRoutes');
 const publicProductRoutes = require('./routes/publicProductRoutes');
 const publicCategoryRoutes = require('./routes/publicCategoryRoutes');
+const publicRentalRequestRoutes = require('./routes/publicRentalRequestRoutes');
 const bannerRoutes = require('./routes/bannerRoutes');
+const rentalRequestRoutes = require('./routes/rentalRequestRoutes');
 
 const app = express();
 
@@ -39,6 +41,7 @@ const corsOptions = {
       'http://localhost:3000',
       'http://localhost:5173',
       'http://localhost:8080',
+      'http://localhost:5000',
       'http://127.0.0.1:3000',
       'http://127.0.0.1:5173',
       'http://127.0.0.1:8080',
@@ -80,8 +83,10 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/admin/products', productRoutes);
 app.use('/api/admin/categories', categoryRoutes);
 app.use('/api/admin/banners', bannerRoutes);
+app.use('/api/admin/rental-requests', rentalRequestRoutes);
 app.use('/api/products', publicProductRoutes);
 app.use('/api/categories', publicCategoryRoutes);
+app.use('/api/rental-requests', publicRentalRequestRoutes);
 
 // Health check route
 app.get('/api/health', (req, res) => {
@@ -117,13 +122,20 @@ const startServer = async () => {
     console.log('🔄 Starting RentYatra Backend Server...');
     console.log('🌍 Environment:', process.env.NODE_ENV || 'development');
     
-    // Connect to MongoDB Atlas first
-    await connectDB();
+    // Connect to MongoDB Atlas first (with error handling)
+    try {
+      await connectDB();
+    } catch (dbError) {
+      console.error('❌ Database connection failed:', dbError.message);
+      console.log('⚠️ Starting server without database connection...');
+    }
     
     const PORT = process.env.PORT || 5000;
     const HOST = process.env.HOST || '0.0.0.0';
     
-    const server = app.listen(PORT, HOST, () => {
+    // Try to start server with retry mechanism
+    const startServerWithRetry = (port, host, retries = 3) => {
+      const server = app.listen(port, host, () => {
       console.log(`
 🚀 RentYatra Backend Server Started Successfully!
 📡 Server running on: ${HOST}:${PORT}
@@ -135,20 +147,34 @@ const startServer = async () => {
 📄 Document Endpoints: /api/documents
 🛡️ Admin Endpoints: /api/admin
 📦 Product Endpoints: /api/admin/products
+🏠 Rental Request Endpoints: /api/admin/rental-requests
 🛍️ Public Product Endpoints: /api/products
 📂 Public Category Endpoints: /api/categories
+🏠 Public Rental Request Endpoints: /api/rental-requests (GET, POST)
       `);
     });
-
-    // Handle server errors
+    
     server.on('error', (error) => {
       if (error.code === 'EADDRINUSE') {
-        console.error(`❌ Port ${PORT} is already in use`);
+        console.log(`❌ Port ${port} is already in use, trying port ${port + 1}...`);
+        if (retries > 0) {
+          setTimeout(() => {
+            startServerWithRetry(port + 1, host, retries - 1);
+          }, 1000);
+        } else {
+          console.error(`❌ Could not find available port after ${retries} retries`);
+          process.exit(1);
+        }
       } else {
         console.error('❌ Server error:', error);
+        process.exit(1);
       }
-      process.exit(1);
     });
+    
+    return server;
+    };
+    
+    const server = startServerWithRetry(PORT, HOST);
 
     // Graceful shutdown
     process.on('SIGTERM', () => {
@@ -157,6 +183,17 @@ const startServer = async () => {
         console.log('🔌 Server closed');
         process.exit(0);
       });
+    });
+
+    // Keep the server running
+    process.on('uncaughtException', (err) => {
+      console.error('❌ Uncaught Exception:', err);
+      // Don't exit the process
+    });
+
+    process.on('unhandledRejection', (err) => {
+      console.error('❌ Unhandled Promise Rejection:', err);
+      // Don't exit the process
     });
 
   } catch (error) {

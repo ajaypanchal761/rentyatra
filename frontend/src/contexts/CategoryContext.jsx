@@ -25,7 +25,9 @@ export const CategoryProvider = ({ children }) => {
       try {
         setLoading(true);
         setError(null);
+        console.log('Fetching categories from API...');
         const response = await apiService.getPublicCategories(1, 100); // Get all categories
+        console.log('Categories API response:', response);
         const fetchedCategories = response.data.categories || [];
         
         // Transform backend categories to frontend format
@@ -51,6 +53,7 @@ export const CategoryProvider = ({ children }) => {
         console.error('Error fetching categories:', err);
         setError(err.message);
         setCategories([]); // Set empty array on error
+        // Don't throw the error, just log it and continue
       } finally {
         setLoading(false);
       }
@@ -115,14 +118,14 @@ export const CategoryProvider = ({ children }) => {
   };
 
   const value = {
-    categories,
-    loading,
-    error,
+    categories: categories || [],
+    loading: loading || false,
+    error: error || null,
     fetchCategoriesByProduct,
     refreshCategories,
     getCategoryBySlug,
     getCategoryById,
-    imageMap,
+    imageMap: imageMap || {},
   };
 
   return (

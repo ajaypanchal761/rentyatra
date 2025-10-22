@@ -153,6 +153,140 @@ const uploadCategory = multer({
   }
 });
 
+// Create storage configuration for rental listing images
+const rentalListingImageStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'rentyatra/rental-listings/images',
+    allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
+    transformation: [
+      { width: 1200, height: 800, crop: 'limit', quality: 'auto' }
+    ],
+    public_id: (req, file) => {
+      // Generate unique filename with user ID and timestamp
+      const userId = req.user?.userId || 'temp';
+      const timestamp = Date.now();
+      const randomId = Math.random().toString(36).substring(2, 8);
+      return `rental_img_${userId}_${timestamp}_${randomId}`;
+    }
+  }
+});
+
+// Create storage configuration for rental listing videos
+const rentalListingVideoStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'rentyatra/rental-listings/videos',
+    resource_type: 'video',
+    allowed_formats: ['mp4', 'mov', 'avi', 'wmv', 'flv', 'webm'],
+    transformation: [
+      { width: 1280, height: 720, crop: 'limit', quality: 'auto' }
+    ],
+    public_id: (req, file) => {
+      // Generate unique filename with user ID and timestamp
+      const userId = req.user?.userId || 'temp';
+      const timestamp = Date.now();
+      const randomId = Math.random().toString(36).substring(2, 8);
+      return `rental_video_${userId}_${timestamp}_${randomId}`;
+    }
+  }
+});
+
+// File filter for images
+const imageFileFilter = (req, file, cb) => {
+  if (file.mimetype.startsWith('image/')) {
+    cb(null, true);
+  } else {
+    cb(new Error('Only image files are allowed!'), false);
+  }
+};
+
+// File filter for videos
+const videoFileFilter = (req, file, cb) => {
+  if (file.mimetype.startsWith('video/')) {
+    cb(null, true);
+  } else {
+    cb(new Error('Only video files are allowed!'), false);
+  }
+};
+
+// Upload instances for rental listings
+const uploadRentalListingImages = multer({
+  storage: rentalListingImageStorage,
+  fileFilter: imageFileFilter,
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB limit per image
+    files: 10 // Maximum 10 images
+  }
+});
+
+const uploadRentalListingVideo = multer({
+  storage: rentalListingVideoStorage,
+  fileFilter: videoFileFilter,
+  limits: {
+    fileSize: 50 * 1024 * 1024, // 50MB limit for video
+    files: 1 // Only 1 video
+  }
+});
+
+// Upload instance for rental requests (images and videos)
+const uploadRentalRequest = multer({
+  storage: multer.memoryStorage(), // Use memory storage for combined upload
+  limits: {
+    fileSize: 200 * 1024 * 1024, // 200MB total limit (increased for videos)
+    files: 11, // 10 images + 1 video
+    fieldSize: 10 * 1024 * 1024 // 10MB for text fields
+  },
+  fileFilter: (req, file, cb) => {
+    console.log('Rental request file filter check:', {
+      fieldname: file.fieldname,
+      mimetype: file.mimetype,
+      originalname: file.originalname
+    });
+    
+    if (file.fieldname === 'images' && file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else if (file.fieldname === 'video' && file.mimetype.startsWith('video/')) {
+      cb(null, true);
+    } else {
+      console.error('Invalid file type or field name for rental request:', {
+        fieldname: file.fieldname,
+        mimetype: file.mimetype
+      });
+      cb(new Error('Invalid file type or field name'), false);
+    }
+  }
+});
+
+// Combined multer for rental listings (handles both images and video)
+const uploadRentalListing = multer({
+  storage: multer.memoryStorage(), // Use memory storage for combined upload
+  limits: {
+    fileSize: 200 * 1024 * 1024, // 200MB total limit (increased for videos)
+    files: 11, // 10 images + 1 video
+    fieldSize: 10 * 1024 * 1024 // 10MB for text fields
+  },
+  fileFilter: (req, file, cb) => {
+    console.log('File filter check:', {
+      fieldname: file.fieldname,
+      mimetype: file.mimetype,
+      originalname: file.originalname
+    });
+    
+    if (file.fieldname === 'images' && file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else if (file.fieldname === 'video' && file.mimetype.startsWith('video/')) {
+      cb(null, true);
+    } else {
+      console.error('Invalid file type or field name:', {
+        fieldname: file.fieldname,
+        mimetype: file.mimetype
+      });
+      cb(new Error('Invalid file type or field name'), false);
+    }
+  }
+});
+
 // Helper function to delete image from Cloudinary
 const deleteImage = async (publicId) => {
   try {
@@ -184,6 +318,10 @@ module.exports = {
   uploadProfile,
   uploadProduct,
   uploadCategory,
+  uploadRentalListingImages,
+  uploadRentalListingVideo,
+  uploadRentalListing,
+  uploadRentalRequest,
   deleteImage,
   extractPublicId
 };

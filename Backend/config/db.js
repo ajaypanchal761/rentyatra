@@ -25,6 +25,7 @@ const connectDB = async () => {
     
     mongoose.connection.on('disconnected', () => {
       console.log('⚠️ Mongoose disconnected from MongoDB Atlas');
+      // Don't exit the process, just log the disconnection
     });
     
     // Handle application termination
@@ -32,6 +33,18 @@ const connectDB = async () => {
       await mongoose.connection.close();
       console.log('🔌 MongoDB connection closed through app termination');
       process.exit(0);
+    });
+
+    // Handle uncaught exceptions
+    process.on('uncaughtException', (err) => {
+      console.error('❌ Uncaught Exception:', err);
+      // Don't exit the process, just log the error
+    });
+
+    // Handle unhandled promise rejections
+    process.on('unhandledRejection', (err) => {
+      console.error('❌ Unhandled Promise Rejection:', err);
+      // Don't exit the process, just log the error
     });
     
   } catch (err) {

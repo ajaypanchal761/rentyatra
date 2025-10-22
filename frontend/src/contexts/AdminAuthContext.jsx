@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react';
+import apiService from '../services/api';
 
 const AdminAuthContext = createContext();
 
@@ -23,51 +24,58 @@ export const AdminAuthProvider = ({ children }) => {
       
       if (token && adminData) {
         try {
-          // Verify token with backend
-          const response = await fetch('http://localhost:5000/api/admin/validate-token', {
-            method: 'GET',
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json',
-            },
-          });
+          // Verify token with backend using API service
+          console.log('Validating admin token...');
+          const response = await apiService.getAdminProfile();
+          console.log('Admin profile response:', response);
           
-          if (response.ok) {
-            const data = await response.json();
-            setAdmin(data.data.admin);
+          if (response.success) {
+            setAdmin(response.data.admin);
             setIsAuthenticated(true);
+            console.log('Admin authenticated successfully');
           } else {
             // Token is invalid, clear storage
+            console.log('Admin token validation failed, clearing storage');
             localStorage.removeItem('adminToken');
             localStorage.removeItem('adminUser');
+            setAdmin(null);
+            setIsAuthenticated(false);
           }
         } catch (error) {
           console.error('Admin token validation failed:', error);
-          // For development/testing: if backend is not available, use stored data
-          console.log('Backend not available, using stored admin data for testing');
-          try {
-            const parsedAdminData = JSON.parse(adminData);
-            setAdmin(parsedAdminData);
-            setIsAuthenticated(true);
-          } catch (parseError) {
-            console.error('Failed to parse stored admin data:', parseError);
-            localStorage.removeItem('adminToken');
-            localStorage.removeItem('adminUser');
-          }
+          // Clear invalid data
+          localStorage.removeItem('adminToken');
+          localStorage.removeItem('adminUser');
+          setAdmin(null);
+          setIsAuthenticated(false);
         }
       } else {
-        // For testing: create a mock admin if no data exists
-        console.log('No admin data found, creating mock admin for testing');
-        const mockAdmin = {
-          id: 'admin-123',
-          name: 'Test Admin',
-          email: 'admin@rentyatra.com',
-          role: 'super_admin'
-        };
-        setAdmin(mockAdmin);
-        setIsAuthenticated(true);
-        localStorage.setItem('adminUser', JSON.stringify(mockAdmin));
-        localStorage.setItem('adminToken', 'mock-token-for-testing');
+        // For development: Auto-login with default admin credentials
+        console.log('No admin data found, auto-logging in with default credentials for development');
+        try {
+          console.log('Attempting auto-login...');
+          console.log('API Base URL:', apiService.baseURL);
+          const loginData = await apiService.adminLogin('panchalajay717@gmail.com', 'admin123');
+          console.log('Auto-login response:', loginData);
+          
+          if (loginData.success) {
+            setAdmin(loginData.data.admin);
+            setIsAuthenticated(true);
+            localStorage.setItem('adminUser', JSON.stringify(loginData.data.admin));
+            localStorage.setItem('adminToken', loginData.data.token);
+            console.log('Auto-login successful');
+            console.log('Admin token saved:', loginData.data.token ? 'Yes' : 'No');
+          } else {
+            console.log('Auto-login failed:', loginData.message);
+            setAdmin(null);
+            setIsAuthenticated(false);
+          }
+        } catch (error) {
+          console.error('Auto-login failed:', error);
+          console.error('Auto-login error details:', error.message);
+          setAdmin(null);
+          setIsAuthenticated(false);
+        }
       }
       setLoading(false);
     };
@@ -84,16 +92,8 @@ export const AdminAuthProvider = ({ children }) => {
 
   const logout = async () => {
     try {
-      const token = localStorage.getItem('adminToken');
-      if (token) {
-        await fetch('http://localhost:5000/api/admin/logout', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        });
-      }
+      // Note: There's no logout endpoint in the API service, so we'll just clear local storage
+      // If you need to implement server-side logout, add it to the API service
     } catch (error) {
       console.error('Logout error:', error);
     } finally {

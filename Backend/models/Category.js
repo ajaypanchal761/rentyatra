@@ -18,24 +18,27 @@ const categorySchema = new mongoose.Schema({
   },
 
   // Category Images
-  images: [{
-    url: {
-      type: String,
-      required: true
-    },
-    publicId: {
-      type: String,
-      required: true
-    },
-    isPrimary: {
-      type: Boolean,
-      default: false
-    },
-    uploadedAt: {
-      type: Date,
-      default: Date.now
-    }
-  }],
+  images: {
+    type: [{
+      url: {
+        type: String,
+        required: true
+      },
+      publicId: {
+        type: String,
+        required: true
+      },
+      isPrimary: {
+        type: Boolean,
+        default: false
+      },
+      uploadedAt: {
+        type: Date,
+        default: Date.now
+      }
+    }],
+    default: []
+  },
 
   // Category Status
   status: {
@@ -82,15 +85,16 @@ categorySchema.index({ createdAt: -1 });
 
 // Virtual for primary image
 categorySchema.virtual('primaryImage').get(function() {
-  const primaryImg = this.images.find(img => img.isPrimary);
-  return primaryImg || this.images[0] || null;
+  const imageArray = Array.isArray(this.images) ? this.images : [];
+  const primaryImg = imageArray.find(img => img && img.isPrimary);
+  return primaryImg || imageArray[0] || null;
 });
 
 // Pre-save middleware to set primary image
 categorySchema.pre('save', function(next) {
-  if (this.images && this.images.length > 0) {
+  if (this.images && Array.isArray(this.images) && this.images.length > 0) {
     // If no primary image is set, make the first one primary
-    if (!this.images.some(img => img.isPrimary)) {
+    if (!this.images.some(img => img && img.isPrimary)) {
       this.images[0].isPrimary = true;
     }
   }

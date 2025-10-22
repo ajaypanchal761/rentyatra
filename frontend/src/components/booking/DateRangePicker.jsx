@@ -1,9 +1,24 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const DateRangePicker = ({ startDate, endDate, onDateChange, onComplete, minDate = new Date() }) => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectingStart, setSelectingStart] = useState(true);
+
+  // Update selectingStart based on current dates
+  useEffect(() => {
+    console.log('useEffect triggered - startDate:', startDate?.toDateString(), 'endDate:', endDate?.toDateString());
+    if (!startDate) {
+      console.log('No start date, setting selectingStart to true');
+      setSelectingStart(true);
+    } else if (!endDate) {
+      console.log('Has start date but no end date, setting selectingStart to false');
+      setSelectingStart(false);
+    } else {
+      console.log('Both dates set, keeping current selectingStart state');
+      // Don't automatically reset - let user control this
+    }
+  }, [startDate, endDate]);
 
   const daysInMonth = (date) => {
     return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
@@ -34,14 +49,39 @@ const DateRangePicker = ({ startDate, endDate, onDateChange, onComplete, minDate
   const handleDateClick = (date) => {
     if (isDateDisabled(date)) return;
 
+    console.log('=== DateRangePicker handleDateClick ===');
+    console.log('Clicked date:', date.toDateString());
+    console.log('Currently selecting start:', selectingStart);
+    console.log('Current startDate:', startDate?.toDateString());
+    console.log('Current endDate:', endDate?.toDateString());
+
     if (selectingStart) {
+      // If clicking the same date as start date, don't do anything
+      if (startDate && date.toDateString() === startDate.toDateString()) {
+        console.log('Same date as start, ignoring');
+        return;
+      }
+      console.log('Setting start date and clearing end date');
       onDateChange(date, null);
       setSelectingStart(false);
     } else {
+      // If clicking the same date as start date, set it as end date too (single day rental)
+      if (date.toDateString() === startDate.toDateString()) {
+        console.log('Same date as start, setting as end date for single day rental');
+        onDateChange(startDate, date);
+        setSelectingStart(true);
+        if (onComplete) {
+          onComplete();
+        }
+        return;
+      }
+      
       if (date < startDate) {
+        console.log('Date before start date, setting as new start date');
         onDateChange(date, null);
         setSelectingStart(false);
       } else {
+        console.log('Setting end date');
         onDateChange(startDate, date);
         setSelectingStart(true);
         // Call onComplete callback when both dates are selected
@@ -115,9 +155,20 @@ const DateRangePicker = ({ startDate, endDate, onDateChange, onComplete, minDate
         >
           <ChevronLeft size={20} />
         </button>
-        <h3 className="text-base font-bold text-gray-900">
-          {monthNames[currentMonth.getMonth()]} {currentMonth.getFullYear()}
-        </h3>
+        <div className="flex flex-col items-center">
+          <h3 className="text-base font-bold text-gray-900">
+            {monthNames[currentMonth.getMonth()]} {currentMonth.getFullYear()}
+          </h3>
+          {(startDate || endDate) && (
+            <button
+              type="button"
+              onClick={() => onDateChange(null, null)}
+              className="text-xs text-blue-600 hover:text-blue-800 mt-1"
+            >
+              Reset
+            </button>
+          )}
+        </div>
         <button
           type="button"
           onClick={nextMonth}
@@ -141,8 +192,25 @@ const DateRangePicker = ({ startDate, endDate, onDateChange, onComplete, minDate
         {renderCalendar()}
       </div>
 
+      {/* Status */}
+      <div className="mt-4 pt-4 border-t border-gray-200">
+        <div className="text-center text-sm text-gray-600 mb-2">
+          {selectingStart ? 'Select check-in date' : 'Select check-out date'}
+        </div>
+        {startDate && (
+          <div className="text-center text-xs text-gray-500 mb-1">
+            Check-in: {startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+          </div>
+        )}
+        {endDate && (
+          <div className="text-center text-xs text-gray-500">
+            Check-out: {endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+          </div>
+        )}
+      </div>
+
       {/* Legend */}
-      <div className="mt-4 pt-4 border-t border-gray-200 flex flex-wrap gap-3 text-xs">
+      <div className="mt-2 flex flex-wrap gap-3 text-xs">
         <div className="flex items-center gap-1">
           <div className="w-4 h-4 bg-blue-600 rounded"></div>
           <span className="text-gray-600">Selected</span>

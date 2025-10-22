@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { MapPin, Heart, MessageCircle, Share2, Phone, Mail, Star, ChevronLeft, Package, Calendar, Shield, Truck } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
@@ -11,6 +11,7 @@ import BookingCard from '../../components/booking/BookingCard';
 import LocationMap from '../../components/product/LocationMap';
 import ImageCarousel from '../../components/common/ImageCarousel';
 import { format } from 'date-fns';
+import apiService from '../../services/api';
 
 const ItemDetail = () => {
   const { id } = useParams();
@@ -18,29 +19,128 @@ const ItemDetail = () => {
   const { items, toggleFavorite, isFavorite, addToRecentlyViewed, getAverageRating, getReviewsCount } = useApp();
   const { isAuthenticated } = useAuth();
   const [selectedImage, setSelectedImage] = useState(0);
+  const [rentalRequest, setRentalRequest] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [isRentalRequest, setIsRentalRequest] = useState(false);
   
   // Create media array (video + images)
-  const getMediaArray = (item) => {
+  const getMediaArray = (currentItem) => {
     const media = [];
-    if (item.video) {
-      media.push({ type: 'video', src: item.video });
-    }
-    item.images.forEach(img => {
+    // Put images first, then video
+    currentItem.images.forEach(img => {
       media.push({ type: 'image', src: img });
     });
+    if (currentItem.video) {
+      media.push({ type: 'video', src: currentItem.video });
+    }
     return media;
   };
 
   const item = items.find((item) => item.id === Number(id));
 
+  // Get current item (either regular item or rental request) - memoized to prevent infinite re-renders
+  const currentItem = useMemo(() => {
+    if (isRentalRequest && rentalRequest) {
+      // Transform rental request to match item structure
+      return {
+        id: rentalRequest._id,
+        title: rentalRequest.title,
+        description: rentalRequest.description,
+        price: rentalRequest.price?.amount || 0,
+        pricePeriod: rentalRequest.price?.period || 'day',
+        // Add pricing properties for BookingCard component - calculate based on period
+        pricePerDay: (() => {
+          const basePrice = rentalRequest.price?.amount || 0;
+          const period = rentalRequest.price?.period || 'day';
+          if (period === 'day') return basePrice;
+          if (period === 'week') return basePrice / 7;
+          if (period === 'month') return basePrice / 30;
+          return basePrice;
+        })(),
+        pricePerWeek: (() => {
+          const basePrice = rentalRequest.price?.amount || 0;
+          const period = rentalRequest.price?.period || 'day';
+          if (period === 'day') return basePrice * 7;
+          if (period === 'week') return basePrice;
+          if (period === 'month') return (basePrice / 30) * 7;
+          return basePrice;
+        })(),
+        pricePerMonth: (() => {
+          const basePrice = rentalRequest.price?.amount || 0;
+          const period = rentalRequest.price?.period || 'day';
+          if (period === 'day') return basePrice * 30;
+          if (period === 'week') return (basePrice / 7) * 30;
+          if (period === 'month') return basePrice;
+          return basePrice;
+        })(),
+        location: rentalRequest.location?.address || rentalRequest.location?.city || 'Location not specified',
+        images: rentalRequest.images ? (() => {
+          // Sort images to put primary image first
+          const sortedImages = [...rentalRequest.images].sort((a, b) => {
+            if (a.isPrimary && !b.isPrimary) return -1;
+            if (!a.isPrimary && b.isPrimary) return 1;
+            return 0;
+          });
+          return sortedImages.map(img => img.url);
+        })() : [],
+        video: rentalRequest.video?.url || null,
+        category: rentalRequest.category?.name || 'General',
+        product: rentalRequest.product?.name || 'General',
+        owner: rentalRequest.user,
+        postedDate: rentalRequest.createdAt,
+        condition: 'Good',
+        averageRating: 0,
+        totalReviews: 0,
+        isBoosted: false,
+        isRentalRequest: true
+      };
+    }
+    return item;
+  }, [isRentalRequest, rentalRequest, item]);
+
+  // Fetch rental request if regular item not found
+  useEffect(() => {
+    const fetchRentalRequest = async () => {
+      if (!item && id) {
+        setLoading(true);
+        try {
+          const response = await apiService.getPublicRentalRequest(id);
+          if (response.success) {
+            setRentalRequest(response.data.request);
+            setIsRentalRequest(true);
+          }
+        } catch (error) {
+          console.error('Error fetching rental request:', error);
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchRentalRequest();
+  }, [item, id]);
+
   // Track recently viewed items
   useEffect(() => {
-    if (item) {
-      addToRecentlyViewed(item.id);
+    if (currentItem) {
+      addToRecentlyViewed(currentItem.id);
     }
-  }, [item, addToRecentlyViewed]);
+  }, [currentItem, addToRecentlyViewed]);
 
-  if (!item) {
+  // Show loading while fetching rental request
+  if (!item && loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Card className="p-8 text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <h2 className="text-xl font-semibold">Loading...</h2>
+        </Card>
+      </div>
+    );
+  }
+
+  // Show not found if neither item nor rental request found
+  if (!item && !rentalRequest) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <Card className="p-8 text-center">
@@ -63,8 +163,8 @@ const ItemDetail = () => {
   const handleShare = () => {
     if (navigator.share) {
       navigator.share({
-        title: item.title,
-        text: item.description,
+        title: currentItem.title,
+        text: currentItem.description,
         url: window.location.href,
       });
     } else {
@@ -75,7 +175,7 @@ const ItemDetail = () => {
 
   // Get related products (same category, excluding current item)
   const relatedProducts = items
-    .filter((i) => i.category === item.category && i.id !== item.id)
+    .filter((i) => i.category === currentItem.category && i.id !== currentItem.id)
     .slice(0, 4);
 
   return (
@@ -97,25 +197,25 @@ const ItemDetail = () => {
             <Card className="overflow-hidden">
               {/* Main Media Display */}
               <div className="aspect-video bg-gray-200 relative">
-                {getMediaArray(item)[selectedImage]?.type === 'video' ? (
+                {getMediaArray(currentItem)[selectedImage]?.type === 'video' ? (
                   <video
-                    src={getMediaArray(item)[selectedImage].src}
+                    src={getMediaArray(currentItem)[selectedImage].src}
                     className="w-full h-full object-cover"
                     controls
                   />
                 ) : (
                   <img
-                    src={getMediaArray(item)[selectedImage]?.src || item.images[0]}
-                    alt={item.title}
+                    src={getMediaArray(currentItem)[selectedImage]?.src || currentItem.images[0]}
+                    alt={currentItem.title}
                     className="w-full h-full object-cover"
                   />
                 )}
               </div>
 
               {/* Thumbnail Images + Video */}
-              {getMediaArray(item).length > 1 && (
+              {getMediaArray(currentItem).length > 1 && (
                 <div className="flex gap-1.5 md:gap-2 p-2 md:p-4 overflow-x-auto hide-scrollbar">
-                  {getMediaArray(item).map((media, index) => (
+                  {getMediaArray(currentItem).map((media, index) => (
                     <button
                       key={index}
                       onClick={() => setSelectedImage(index)}
@@ -148,23 +248,23 @@ const ItemDetail = () => {
               <div className="flex justify-between items-start mb-3 md:mb-4">
                 <div className="flex-1 min-w-0 pr-2">
                   <h1 className="text-lg md:text-2xl lg:text-3xl font-bold text-gray-900 mb-1 md:mb-2 line-clamp-2">
-                    {item.title}
+                    {currentItem.title}
                   </h1>
                   <div className="flex items-center text-gray-600 text-xs md:text-sm">
                     <MapPin size={14} className="mr-1 flex-shrink-0 md:w-4 md:h-4" />
-                    <span className="truncate">{item.location}</span>
+                    <span className="truncate">{currentItem.location}</span>
                     <span className="mx-1 md:mx-2">•</span>
-                    <span className="whitespace-nowrap">{format(new Date(item.postedDate), 'dd/MM/yyyy')}</span>
+                    <span className="whitespace-nowrap">{format(new Date(currentItem.postedDate), 'dd/MM/yyyy')}</span>
                   </div>
                 </div>
                 <div className="flex gap-1 md:gap-2 flex-shrink-0">
                   <button
-                    onClick={() => toggleFavorite(item.id)}
+                    onClick={() => toggleFavorite(currentItem.id)}
                     className="p-1.5 md:p-2 hover:bg-gray-100 rounded-full transition"
                   >
                     <Heart
                       size={18}
-                      className={`md:w-6 md:h-6 ${isFavorite(item.id) ? 'fill-red-500 text-red-500' : 'text-gray-600'}`}
+                      className={`md:w-6 md:h-6 ${isFavorite(currentItem.id) ? 'fill-red-500 text-red-500' : 'text-gray-600'}`}
                     />
                   </button>
                   <button
@@ -179,26 +279,26 @@ const ItemDetail = () => {
               <div className="mb-4 md:mb-6">
                 <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4 mb-2">
                   <span className="text-2xl md:text-3xl lg:text-4xl font-bold text-blue-600">
-                    ₹{item.price.toLocaleString()}
+                    ₹{currentItem.price.toLocaleString()}<span className="text-xs md:text-sm text-gray-600 "> / day</span>
                   </span>
-                  <span className="text-xs md:text-sm text-gray-500">/month</span>
+                  
                 </div>
                 {/* Rating Display */}
-                {getReviewsCount(item.id) > 0 && (
+                {getReviewsCount(currentItem.id) > 0 && (
                   <div className="flex items-center gap-2">
                     <StarRating 
-                      rating={getAverageRating(item.id)} 
+                      rating={getAverageRating(currentItem.id)} 
                       size={18}
                       showNumber={true}
                     />
                     <span className="text-sm text-gray-600">
-                      ({getReviewsCount(item.id)} {getReviewsCount(item.id) === 1 ? 'review' : 'reviews'})
+                      ({getReviewsCount(currentItem.id)} {getReviewsCount(currentItem.id) === 1 ? 'review' : 'reviews'})
                     </span>
                   </div>
                 )}
               </div>
 
-              {/* Quick Info Cards */}
+              {/* Quick Info Cards
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4 md:mb-6">
                 <div className="bg-blue-50 rounded-lg p-2 md:p-3 text-center">
                   <Package size={16} className="mx-auto mb-1 text-blue-600 md:w-5 md:h-5" />
@@ -216,12 +316,12 @@ const ItemDetail = () => {
                   <Truck size={16} className="mx-auto mb-1 text-orange-600 md:w-5 md:h-5" />
                   <p className="text-[10px] md:text-xs text-gray-600">Pickup Available</p>
                 </div>
-              </div>
+              </div> */}
 
               <div className="border-t pt-3 md:pt-6">
                 <h2 className="text-base md:text-lg lg:text-xl font-semibold mb-2 md:mb-3">Description</h2>
                 <p className="text-xs md:text-sm lg:text-base text-gray-700 whitespace-pre-line leading-relaxed">
-                  {item.description}
+                  {currentItem.description}
                 </p>
               </div>
 
@@ -230,7 +330,7 @@ const ItemDetail = () => {
                 <div className="grid grid-cols-2 gap-3 md:gap-4">
                   <div className="bg-gray-50 rounded-lg p-2 md:p-3">
                     <span className="text-[10px] md:text-xs text-gray-600 block mb-1">Category</span>
-                    <p className="text-xs md:text-sm font-semibold capitalize">{item.category}</p>
+                    <p className="text-xs md:text-sm font-semibold capitalize">{currentItem.category}</p>
                   </div>
                   <div className="bg-gray-50 rounded-lg p-2 md:p-3">
                     <span className="text-[10px] md:text-xs text-gray-600 block mb-1">Condition</span>
@@ -239,12 +339,14 @@ const ItemDetail = () => {
                   <div className="bg-gray-50 rounded-lg p-2 md:p-3">
                     <span className="text-[10px] md:text-xs text-gray-600 block mb-1">Listed On</span>
                     <p className="text-xs md:text-sm font-semibold">
-                      {format(new Date(item.postedDate), 'dd MMM yyyy')}
+                      {format(new Date(currentItem.postedDate), 'dd MMM yyyy')}
                     </p>
                   </div>
                   <div className="bg-gray-50 rounded-lg p-2 md:p-3">
-                    <span className="text-[10px] md:text-xs text-gray-600 block mb-1">Item ID</span>
-                    <p className="text-xs md:text-sm font-semibold">#{item.id.toString().padStart(6, '0')}</p>
+                    <span className="text-[10px] md:text-xs text-gray-600 block mb-1">Posted Time</span>
+                    <p className="text-xs md:text-sm font-semibold">
+                      {format(new Date(currentItem.postedDate), 'hh:mm a')}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -254,7 +356,7 @@ const ItemDetail = () => {
           {/* Right Column - Booking & Owner Info */}
           <div className="space-y-3 md:space-y-6">
             {/* Booking Card */}
-            <BookingCard item={item} />
+            <BookingCard item={currentItem} />
             
             {/* Owner Card */}
             <Card className="p-3 md:p-6">
@@ -262,42 +364,23 @@ const ItemDetail = () => {
               
               <div className="flex items-center mb-3 md:mb-4">
                 <div className="w-12 h-12 md:w-16 md:h-16 bg-blue-600 rounded-full flex items-center justify-center text-white text-lg md:text-2xl font-bold flex-shrink-0">
-                  {item.owner.name.charAt(0)}
+                  {currentItem.owner.name.charAt(0)}
                 </div>
                 <div className="ml-3 md:ml-4 min-w-0">
-                  <h3 className="font-semibold text-sm md:text-base lg:text-lg truncate">{item.owner.name}</h3>
+                  <h3 className="font-semibold text-sm md:text-base lg:text-lg truncate">{currentItem.owner.name}</h3>
                   <div className="flex items-center">
                     <Star size={14} className="text-yellow-400 fill-yellow-400 md:w-4 md:h-4" />
-                    <span className="ml-1 text-xs md:text-sm text-gray-600">{item.owner.rating} Rating</span>
+                    <span className="ml-1 text-xs md:text-sm text-gray-600">{currentItem.owner.rating} Rating</span>
                   </div>
-                </div>
-              </div>
-
-              <div className="space-y-2 md:space-y-3 mb-4 md:mb-6">
-                <div className="flex items-center text-xs md:text-sm text-gray-600">
-                  <Phone size={14} className="mr-2 flex-shrink-0 md:w-4 md:h-4" />
-                  <span>+1 (555) 123-4567</span>
-                </div>
-                <div className="flex items-center text-xs md:text-sm text-gray-600">
-                  <Mail size={14} className="mr-2 flex-shrink-0 md:w-4 md:h-4" />
-                  <span className="truncate">owner@example.com</span>
                 </div>
               </div>
 
               <Button
                 icon={MessageCircle}
-                className="w-full mb-2 md:mb-3 text-sm md:text-base"
+                className="w-full mb-4 md:mb-6 text-sm md:text-base"
                 onClick={handleContactOwner}
               >
                 Chat with Owner
-              </Button>
-              
-              <Button
-                variant="outline"
-                icon={Phone}
-                className="w-full text-sm md:text-base"
-              >
-                Show Phone Number
               </Button>
 
               <div className="mt-4 md:mt-6 p-3 md:p-4 bg-blue-50 rounded-lg">
@@ -321,13 +404,13 @@ const ItemDetail = () => {
               <div className="mb-3 md:mb-4">
                 <div className="flex items-center gap-2 text-sm md:text-base text-gray-700">
                   <MapPin size={16} className="text-gray-500 flex-shrink-0 md:w-5 md:h-5" />
-                  <span className="font-medium">{item.location}</span>
+                  <span className="font-medium">{currentItem.location}</span>
                 </div>
               </div>
               
               {/* Map Container */}
-              <div className="w-full h-48 md:h-64 lg:h-80">
-                <LocationMap location={item.location} title={item.title} />
+              <div className="w-full h-48 md:h-80 lg:h-96 xl:h-[28rem]">
+                <LocationMap location={currentItem.location} title={currentItem.title} />
               </div>
               
               <div className="mt-3 md:mt-4 p-3 bg-yellow-50 rounded-lg">
@@ -341,7 +424,7 @@ const ItemDetail = () => {
 
         {/* Reviews Section */}
         <div className="mt-8 md:mt-12">
-          <ReviewsSection itemId={item.id} />
+          <ReviewsSection itemId={currentItem.id} />
         </div>
 
         {/* Related Products Section */}

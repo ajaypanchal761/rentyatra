@@ -96,8 +96,10 @@ class ApiService {
       'Content-Type': 'application/json',
     };
 
-    if (this.adminToken) {
-      headers.Authorization = `Bearer ${this.adminToken}`;
+    // Get fresh admin token from localStorage
+    const adminToken = localStorage.getItem('adminToken');
+    if (adminToken) {
+      headers.Authorization = `Bearer ${adminToken}`;
     }
 
     return headers;
@@ -107,8 +109,10 @@ class ApiService {
   getAdminFileUploadHeaders() {
     const headers = {};
 
-    if (this.adminToken) {
-      headers.Authorization = `Bearer ${this.adminToken}`;
+    // Get fresh admin token from localStorage
+    const adminToken = localStorage.getItem('adminToken');
+    if (adminToken) {
+      headers.Authorization = `Bearer ${adminToken}`;
     } else {
       console.warn('No admin token found for file upload');
     }
@@ -322,10 +326,14 @@ class ApiService {
   }
 
   // Admin APIs
-  async adminLogin(email, password, adminKey) {
+  async adminLogin(email, password, adminKey = null) {
+    const body = { email, password };
+    if (adminKey) {
+      body.adminKey = adminKey;
+    }
     return this.request('/admin/login', {
       method: 'POST',
-      body: JSON.stringify({ email, password, adminKey }),
+      body: JSON.stringify(body),
     });
   }
 
@@ -1316,6 +1324,337 @@ class ApiService {
       headers: {
         'Content-Type': 'application/json',
       },
+    };
+
+    try {
+      const response = await fetch(url, config);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Something went wrong');
+      }
+
+      return data;
+    } catch (error) {
+      console.error('API Request Error:', error);
+      throw error;
+    }
+  }
+
+
+  // Rental Request APIs
+  async getAllRentalRequests(page = 1, limit = 10, status = '', search = '', category = '', city = '') {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString(),
+    });
+    
+    if (status) params.append('status', status);
+    if (search) params.append('search', search);
+    if (category) params.append('category', category);
+    if (city) params.append('city', city);
+
+    const url = `${this.baseURL}/admin/rental-requests?${params.toString()}`;
+    const config = {
+      headers: this.getAdminHeaders(),
+    };
+
+    try {
+      const response = await fetch(url, config);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Something went wrong');
+      }
+
+      return data;
+    } catch (error) {
+      console.error('API Request Error:', error);
+      throw error;
+    }
+  }
+
+  async getRentalRequest(requestId) {
+    const url = `${this.baseURL}/admin/rental-requests/${requestId}`;
+    const config = {
+      headers: this.getAdminHeaders(),
+    };
+
+    try {
+      const response = await fetch(url, config);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Something went wrong');
+      }
+
+      return data;
+    } catch (error) {
+      console.error('API Request Error:', error);
+      throw error;
+    }
+  }
+
+  async updateRentalRequestStatus(requestId, status, rejectionReason = null) {
+    const url = `${this.baseURL}/admin/rental-requests/${requestId}/status`;
+    const config = {
+      method: 'PUT',
+      headers: this.getAdminHeaders(),
+      body: JSON.stringify({ status, rejectionReason }),
+    };
+
+    try {
+      const response = await fetch(url, config);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Something went wrong');
+      }
+
+      return data;
+    } catch (error) {
+      console.error('API Request Error:', error);
+      throw error;
+    }
+  }
+
+  async bulkUpdateRentalRequestStatus(requestIds, status, rejectionReason = null) {
+    const url = `${this.baseURL}/admin/rental-requests/bulk-status`;
+    const config = {
+      method: 'PUT',
+      headers: this.getAdminHeaders(),
+      body: JSON.stringify({ requestIds, status, rejectionReason }),
+    };
+
+    try {
+      const response = await fetch(url, config);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Something went wrong');
+      }
+
+      return data;
+    } catch (error) {
+      console.error('API Request Error:', error);
+      throw error;
+    }
+  }
+
+  async deleteRentalRequest(requestId) {
+    const url = `${this.baseURL}/admin/rental-requests/${requestId}`;
+    const config = {
+      method: 'DELETE',
+      headers: this.getAdminHeaders(),
+    };
+
+    try {
+      const response = await fetch(url, config);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Something went wrong');
+      }
+
+      return data;
+    } catch (error) {
+      console.error('API Request Error:', error);
+      throw error;
+    }
+  }
+
+  async getRentalRequestStats() {
+    const url = `${this.baseURL}/admin/rental-requests/stats`;
+    const config = {
+      headers: this.getAdminHeaders(),
+    };
+
+    try {
+      const response = await fetch(url, config);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Something went wrong');
+      }
+
+      return data;
+    } catch (error) {
+      console.error('API Request Error:', error);
+      throw error;
+    }
+  }
+
+  async getRentalRequestsByUser(userId, page = 1, limit = 10, status = '') {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString(),
+    });
+    
+    if (status) params.append('status', status);
+
+    const url = `${this.baseURL}/admin/rental-requests/user/${userId}?${params.toString()}`;
+    const config = {
+      headers: this.getAdminHeaders(),
+    };
+
+    try {
+      const response = await fetch(url, config);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Something went wrong');
+      }
+
+      return data;
+    } catch (error) {
+      console.error('API Request Error:', error);
+      throw error;
+    }
+  }
+
+  // Public Rental Request APIs
+  async getPublicRentalRequests(page = 1, limit = 12, search = '', category = '', city = '') {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString(),
+    });
+    
+    if (search) params.append('search', search);
+    if (category) params.append('category', category);
+    if (city) params.append('city', city);
+
+    const url = `${this.baseURL}/rental-requests?${params.toString()}`;
+    const config = {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    };
+
+    try {
+      const response = await fetch(url, config);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Something went wrong');
+      }
+
+      return data;
+    } catch (error) {
+      console.error('API Request Error:', error);
+      throw error;
+    }
+  }
+
+  async getPublicRentalRequest(requestId) {
+    const url = `${this.baseURL}/rental-requests/${requestId}`;
+    const config = {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    };
+
+    try {
+      const response = await fetch(url, config);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Something went wrong');
+      }
+
+      return data;
+    } catch (error) {
+      console.error('API Request Error:', error);
+      throw error;
+    }
+  }
+
+  async getFeaturedRentalRequests(limit = 8) {
+    const params = new URLSearchParams({
+      limit: limit.toString(),
+    });
+
+    const url = `${this.baseURL}/rental-requests/featured?${params.toString()}`;
+    const config = {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    };
+
+    try {
+      const response = await fetch(url, config);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Something went wrong');
+      }
+
+      return data;
+    } catch (error) {
+      console.error('API Request Error:', error);
+      throw error;
+    }
+  }
+
+  // Create rental listing (for users)
+  async createRentalListing(formData) {
+    const url = `${this.baseURL}/rental-requests`;
+    const config = {
+      method: 'POST',
+      headers: this.getFileUploadHeaders(),
+      body: formData,
+    };
+
+    try {
+      console.log('Creating rental listing:', formData);
+      console.log('Request config:', config);
+      console.log('FormData contents:');
+      for (let [key, value] of formData.entries()) {
+        console.log(key, value);
+      }
+      
+      const response = await this.fetchWithTimeout(url, config, 120000); // 2 minutes for file uploads
+      console.log('Create rental listing response status:', response.status);
+      console.log('Create rental listing response headers:', response.headers);
+      
+      const data = await response.json();
+      console.log('Create rental listing response data:', data);
+
+      if (!response.ok) {
+        console.error('Server error response:', data);
+        throw new Error(data.message || `Server error: ${response.status}`);
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Create Rental Listing Error Details:', {
+        error: error,
+        message: error.message,
+        stack: error.stack
+      });
+      
+      // Provide more specific error messages
+      if (error.message === 'Request Timeout') {
+        throw new Error('Upload timeout - Please try again with smaller files or check your internet connection');
+      } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        throw new Error('Network error - Please check your internet connection');
+      }
+      
+      throw error;
+    }
+  }
+
+  // Get user's own rental requests
+  async getUserRentalListings(page = 1, limit = 10, status = '') {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString(),
+    });
+    
+    if (status) params.append('status', status);
+
+    const url = `${this.baseURL}/rental-requests/my-requests?${params.toString()}`;
+    const config = {
+      headers: this.getHeaders(),
     };
 
     try {

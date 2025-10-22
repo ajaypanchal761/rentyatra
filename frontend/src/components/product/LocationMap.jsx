@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, ZoomControl } from 'react-leaflet';
 import L from 'leaflet';
 import { MapPin } from 'lucide-react';
+import 'leaflet/dist/leaflet.css';
 
 // Fix for default marker icon
 delete L.Icon.Default.prototype._getIconUrl;
@@ -58,24 +59,69 @@ const getCoordinatesFromLocation = (location) => {
 
 function LocationMap({ location, title }) {
   const [coordinates, setCoordinates] = useState([28.7041, 77.1025]);
+  const [mapError, setMapError] = useState(false);
+  const [mapLoaded, setMapLoaded] = useState(false);
 
   useEffect(() => {
     const coords = getCoordinatesFromLocation(location);
     setCoordinates(coords);
-  }, [location]);
+    console.log('LocationMap: Setting coordinates for', location, 'to', coords);
+    
+    // Set a timeout to detect if map fails to load
+    const timeout = setTimeout(() => {
+      if (!mapLoaded) {
+        console.log('LocationMap: Map loading timeout');
+        setMapError(true);
+      }
+    }, 5000);
+
+    return () => clearTimeout(timeout);
+  }, [location, mapLoaded]);
+
+  if (mapError) {
+    return (
+      <div className="w-full h-full rounded-lg border border-gray-200 shadow-sm bg-gray-100 flex items-center justify-center">
+        <div className="text-center text-gray-500">
+          <MapPin size={32} className="mx-auto mb-2" />
+          <p className="text-sm">Map unavailable</p>
+          <p className="text-xs">{location}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full h-full rounded-lg overflow-hidden border border-gray-200 shadow-sm">
       <MapContainer
         center={coordinates}
         zoom={13}
-        scrollWheelZoom={false}
+        scrollWheelZoom={true}
         className="w-full h-full"
         style={{ minHeight: '100%' }}
+        zoomControl={false}
+        whenCreated={(map) => {
+          console.log('LocationMap: Map created successfully');
+          setMapLoaded(true);
+        }}
+        whenReady={() => {
+          console.log('LocationMap: Map is ready');
+          setMapLoaded(true);
+        }}
       >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          eventHandlers={{
+            loading: () => console.log('LocationMap: Tiles loading'),
+            load: () => {
+              console.log('LocationMap: Tiles loaded');
+              setMapLoaded(true);
+            },
+            error: () => {
+              console.log('LocationMap: Tile loading error');
+              setMapError(true);
+            }
+          }}
         />
         <Marker position={coordinates}>
           <Popup>
@@ -85,6 +131,7 @@ function LocationMap({ location, title }) {
             </div>
           </Popup>
         </Marker>
+        <ZoomControl position="topright" />
       </MapContainer>
     </div>
   );

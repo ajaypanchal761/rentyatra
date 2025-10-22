@@ -11,24 +11,27 @@ const productSchema = new mongoose.Schema({
   },
   
   // Product Images
-  images: [{
-    url: {
-      type: String,
-      required: true
-    },
-    publicId: {
-      type: String,
-      required: true
-    },
-    isPrimary: {
-      type: Boolean,
-      default: false
-    },
-    uploadedAt: {
-      type: Date,
-      default: Date.now
-    }
-  }],
+  images: {
+    type: [{
+      url: {
+        type: String,
+        required: true
+      },
+      publicId: {
+        type: String,
+        required: true
+      },
+      isPrimary: {
+        type: Boolean,
+        default: false
+      },
+      uploadedAt: {
+        type: Date,
+        default: Date.now
+      }
+    }],
+    default: []
+  },
   
   // Product Status
   status: {
@@ -74,15 +77,16 @@ productSchema.index({ createdAt: -1 });
 
 // Virtual for primary image
 productSchema.virtual('primaryImage').get(function() {
-  const primaryImg = this.images.find(img => img.isPrimary);
-  return primaryImg || this.images[0] || null;
+  const imageArray = Array.isArray(this.images) ? this.images : [];
+  const primaryImg = imageArray.find(img => img && img.isPrimary);
+  return primaryImg || imageArray[0] || null;
 });
 
 // Pre-save middleware to set primary image
 productSchema.pre('save', function(next) {
-  if (this.images && this.images.length > 0) {
+  if (this.images && Array.isArray(this.images) && this.images.length > 0) {
     // If no primary image is set, make the first one primary
-    const hasPrimary = this.images.some(img => img.isPrimary);
+    const hasPrimary = this.images.some(img => img && img.isPrimary);
     if (!hasPrimary) {
       this.images[0].isPrimary = true;
     }

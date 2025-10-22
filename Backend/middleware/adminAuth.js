@@ -27,17 +27,32 @@ const adminAuth = async (req, res, next) => {
     }
 
     console.log('Admin token found:', token.substring(0, 20) + '...');
+    console.log('JWT_SECRET:', process.env.JWT_SECRET ? 'Set' : 'Not set');
 
     try {
       // Verify token
       console.log('Verifying admin token...');
       const decoded = jwt.verify(token, process.env.JWT_SECRET || 'rentyatra-secret-key');
       console.log('Token decoded successfully:', decoded);
+      console.log('Decoded adminId type:', typeof decoded.adminId);
+      console.log('Decoded adminId value:', decoded.adminId);
       
       // Get admin from token
       console.log('Looking for admin with ID:', decoded.adminId);
+      console.log('Admin model:', Admin);
+      console.log('Database connection state:', Admin.db.readyState);
+      
+      // Test database connection with a simple query
+      try {
+        const adminCount = await Admin.countDocuments();
+        console.log('Total admins in database:', adminCount);
+      } catch (dbError) {
+        console.error('Database query error:', dbError);
+      }
+      
       const admin = await Admin.findById(decoded.adminId);
       console.log('Admin found:', admin ? 'Yes' : 'No');
+      console.log('Admin details:', admin ? { id: admin._id, name: admin.name, email: admin.email } : 'null');
       
       if (!admin) {
         console.log('Admin not found in database');
@@ -114,7 +129,13 @@ const checkAdminRole = (...roles) => {
 // @access  Private
 const checkAdminPermission = (permission) => {
   return (req, res, next) => {
+    console.log('=== Checking Admin Permission ===');
+    console.log('Required permission:', permission);
+    console.log('Admin object:', req.admin);
+    console.log('Admin permissions:', req.admin?.permissions);
+    
     if (!req.admin) {
+      console.log('❌ No admin object in request');
       return res.status(401).json({
         success: false,
         message: 'Access denied. Admin authentication required.'
@@ -123,17 +144,21 @@ const checkAdminPermission = (permission) => {
 
     // Super admin has all permissions
     if (req.admin.role === 'super_admin') {
+      console.log('✅ Super admin - granting all permissions');
       return next();
     }
 
     // Check specific permission
     if (!req.admin.permissions || !req.admin.permissions[permission]) {
+      console.log(`❌ Permission denied: ${permission}`);
+      console.log('Available permissions:', req.admin.permissions);
       return res.status(403).json({
         success: false,
         message: `Access denied. Required permission: ${permission}`
       });
     }
 
+    console.log(`✅ Permission granted: ${permission}`);
     next();
   };
 };

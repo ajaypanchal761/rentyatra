@@ -8,7 +8,9 @@ import {
   DollarSign, 
   Image, 
   Bell, 
-  UserPlus
+  UserPlus,
+  Settings,
+  FileText
 } from 'lucide-react';
 
 function AdminSidebar({ activePage, setActivePage }) {
@@ -17,6 +19,7 @@ function AdminSidebar({ activePage, setActivePage }) {
     { name: 'Users', icon: Users },
     { name: 'Products', icon: Package },
     { name: 'Categories', icon: Tag },
+    { name: 'Rental listing', icon: FileText },
     { name: 'Subscriptions', icon: CreditCard },
     { name: 'Boosts', icon: Zap },
     { name: 'Payments', icon: DollarSign },

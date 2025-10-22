@@ -4,7 +4,7 @@ import {
   Package, Heart, MessageCircle, User, Edit, Trash2, Calendar, Zap, 
   CreditCard, Rocket, LogOut, MapPin, Eye, Menu, X, Home, 
   Star, History, Briefcase, Globe, Bell, Share2, ThumbsUp, 
-  Mail, Info, FileText, Lock, UserX, ChevronRight, Shield, BadgeCheck
+  Mail, Info, FileText, Lock, UserX, ChevronRight, Shield, BadgeCheck, Clock
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useApp } from '../../contexts/AppContext';
@@ -14,6 +14,7 @@ import ImageCarousel from '../../components/common/ImageCarousel';
 import BoostModal from '../../components/boost/BoostModal';
 import ShareModal from '../../components/share/ShareModal';
 import { useSubscription } from '../../contexts/SubscriptionContext';
+import apiService from '../../services/api';
 
 const Dashboard = () => {
   const { isAuthenticated, user, logout } = useAuth();
@@ -25,6 +26,8 @@ const Dashboard = () => {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [shareModalOpen, setShareModalOpen] = useState(false);
+  const [rentalListings, setRentalListings] = useState([]);
+  const [loadingRentals, setLoadingRentals] = useState(false);
   const navigate = useNavigate();
 
   // Handle navigation state (e.g., from booking confirmation)
@@ -66,6 +69,30 @@ const Dashboard = () => {
     navigate('/');
   };
 
+  // Fetch user's rental listings
+  const fetchRentalListings = async () => {
+    if (!isAuthenticated) return;
+    
+    setLoadingRentals(true);
+    try {
+      const response = await apiService.getUserRentalListings();
+      if (response.success) {
+        setRentalListings(response.data.requests || []);
+      }
+    } catch (error) {
+      console.error('Error fetching rental listings:', error);
+    } finally {
+      setLoadingRentals(false);
+    }
+  };
+
+  // Fetch rental listings when component mounts or when activeTab changes to my-ads
+  useEffect(() => {
+    if (activeTab === 'my-ads') {
+      fetchRentalListings();
+    }
+  }, [activeTab, isAuthenticated]);
+
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
@@ -86,7 +113,7 @@ const Dashboard = () => {
     {
       title: '',
       items: [
-        { id: 'my-ads', label: 'My Rentals', icon: Package, count: myAds.length, color: 'blue' },
+        { id: 'my-ads', label: 'My Rentals', icon: Package, count: rentalListings.length, color: 'blue' },
         { id: 'featured-ads', label: 'My Featured Ads', icon: Star, color: 'yellow' },
         { id: 'bookings', label: 'My Bookings', icon: Calendar, count: bookings.length, color: 'green' },
         { id: 'favorites', label: 'Favourites', icon: Heart, count: favoriteItems.length, color: 'red' },
@@ -215,9 +242,9 @@ const Dashboard = () => {
                   {user.name.charAt(0)}
                 </div>
                 {/* Verified badge option */}
-                <button className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center border-2 border-white">
+                <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center border-2 border-white">
                   <BadgeCheck size={12} />
-                </button>
+                </div>
               </div>
               <div className="flex-1 min-w-0 text-left">
                 <h3 className="font-bold text-white truncate text-sm">{user.name}</h3>
@@ -409,7 +436,12 @@ const Dashboard = () => {
                 </Button>
               </div>
 
-              {myAds.length === 0 ? (
+              {loadingRentals ? (
+                <Card className="p-8 md:p-12 text-center">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                  <p className="text-gray-600">Loading your rentals...</p>
+                </Card>
+              ) : rentalListings.length === 0 ? (
                 <Card className="p-8 md:p-12 text-center">
                   <Package size={48} className="mx-auto mb-4 text-gray-400" />
                   <h3 className="text-lg md:text-xl font-bold mb-2">No rentals yet</h3>
@@ -418,33 +450,48 @@ const Dashboard = () => {
                 </Card>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {myAds.map((item) => {
-                    const isBoosted = isProductBoosted(item.id);
+                  {rentalListings.map((listing) => {
                     return (
-                      <Card key={item.id} className="overflow-hidden hover:shadow-lg transition-shadow">
-                        {isBoosted && (
-                          <div className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-3 py-1 text-xs font-bold flex items-center gap-1.5">
-                            <Zap size={14} className="fill-current" />
-                            BOOSTED
-                          </div>
-                        )}
+                      <Card key={listing._id} className="overflow-hidden hover:shadow-lg transition-shadow">
+                        {/* Status Badge */}
+                        <div className={`px-3 py-1 text-xs font-bold flex items-center gap-1.5 ${
+                          listing.status === 'approved' ? 'bg-green-500 text-white' :
+                          listing.status === 'pending' ? 'bg-yellow-500 text-white' :
+                          listing.status === 'rejected' ? 'bg-red-500 text-white' :
+                          'bg-gray-500 text-white'
+                        }`}>
+                          {listing.status === 'approved' && <BadgeCheck size={14} />}
+                          {listing.status === 'pending' && <Clock size={14} />}
+                          {listing.status === 'rejected' && <X size={14} />}
+                          {listing.status?.toUpperCase() || 'UNKNOWN'}
+                        </div>
                         <div className="relative">
-                          <ImageCarousel images={item.images} />
+                          {listing.images && listing.images.length > 0 ? (
+                            <ImageCarousel images={listing.images.map(img => img.url)} />
+                          ) : (
+                            <div className="h-48 w-full bg-gray-200 flex items-center justify-center">
+                              <Package size={48} className="text-gray-400" />
+                            </div>
+                          )}
                         </div>
                         <div className="p-4">
-                          <h3 className="font-bold text-gray-900 mb-2 line-clamp-1 text-sm md:text-base">{item.title}</h3>
+                          <h3 className="font-bold text-gray-900 mb-2 line-clamp-1 text-sm md:text-base">{listing.title}</h3>
                           <div className="flex items-center justify-between mb-3">
-                            <span className="text-lg md:text-xl font-bold text-blue-600">₹{item.price}/mo</span>
+                            <span className="text-lg md:text-xl font-bold text-blue-600">
+                              ₹{listing.price?.amount || 0}/{listing.price?.period || 'day'}
+                            </span>
                             <div className="flex items-center gap-1 text-gray-600">
-                              <Eye size={14} />
-                              <span className="text-xs">123 views</span>
+                              <MapPin size={14} />
+                              <span className="text-xs">
+                                {listing.location?.address || listing.location?.city || 'Location not specified'}
+                              </span>
                             </div>
                           </div>
                           <div className="flex gap-2">
                             <Button 
                               variant="outline" 
                               className="flex-1 text-xs md:text-sm py-2"
-                              onClick={() => navigate(`/item/${item.id}`)}
+                              onClick={() => navigate(`/rental/${listing._id}`)}
                             >
                               <Eye size={14} className="mr-1" />
                               View

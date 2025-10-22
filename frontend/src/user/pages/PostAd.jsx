@@ -1,40 +1,109 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Upload, X, MapPin, ArrowLeft, ArrowRight, Check, ChevronRight } from 'lucide-react';
+import { Upload, X, MapPin, ArrowLeft, ArrowRight, Check, ChevronRight, Search, Loader2, Navigation } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCategories } from '../../contexts/CategoryContext';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
+import apiService from '../../services/api';
 
 const PostAd = () => {
   const { addItem } = useApp();
-  const { categories, imageMap } = useCategories();
+  const { categories, imageMap, loading: categoriesLoading } = useCategories();
   const { isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
 
   // Multi-step state
-  const [currentStep, setCurrentStep] = useState(1); // 1: Category, 2: Subcategory, 3: Details
+  const [currentStep, setCurrentStep] = useState(1); // 1: Product, 2: Category, 3: Details
+  const [selectedProduct, setSelectedProduct] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState(null);
-  const [selectedSubcategory, setSelectedSubcategory] = useState(null);
+
+  // Product management state
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [productSearch, setProductSearch] = useState('');
+  
+  // Category management state
+  const [productCategories, setProductCategories] = useState([]);
+  
+  // Location state
+  const [locationLoading, setLocationLoading] = useState(false);
+  const [coordinates, setCoordinates] = useState(null);
+  const [showMap, setShowMap] = useState(false);
 
   const [formData, setFormData] = useState({
     title: '',
     description: '',
     pricePerDay: '',
-    pricePerWeek: '',
-    pricePerMonth: '',
     location: '',
     condition: 'good',
-    availableFrom: '',
   });
 
   const [images, setImages] = useState([]);
   const [video, setVideo] = useState(null);
   const [error, setError] = useState('');
 
-  // Get subcategories dynamically from selected category
-  const subcategories = selectedCategory?.subcategories || [];
+
+  // Fetch products on component mount
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  // Fetch products from API
+  const fetchProducts = async () => {
+    setLoading(true);
+    try {
+      const response = await apiService.getPublicProducts(1, 50, productSearch);
+      if (response.success) {
+        setProducts(response.data.products || []);
+      }
+    } catch (error) {
+      console.error('Error fetching products:', error);
+      setError('Failed to load products');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch products when search changes
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (productSearch !== '') {
+        fetchProducts();
+      } else {
+        fetchProducts();
+      }
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [productSearch]);
+
+  // Fetch categories by product
+  const fetchCategoriesByProduct = async (productId) => {
+    try {
+      const response = await apiService.getCategoriesByProduct(productId);
+      if (response.success) {
+        const fetchedCategories = response.data.categories || [];
+        
+        // Transform backend categories to frontend format
+        const transformedCategories = fetchedCategories.map(category => ({
+          id: category._id,
+          name: category.name,
+          slug: category.name.toLowerCase().replace(/\s+/g, '-'),
+          image: category.images?.[0]?.url || null,
+          product: category.product,
+          subcategories: [] // Categories from backend don't have subcategories in this structure
+        }));
+        
+        setProductCategories(transformedCategories);
+      }
+    } catch (error) {
+      console.error('Error fetching categories by product:', error);
+      setError('Failed to load categories');
+      setProductCategories([]);
+    }
+  };
 
   if (!isAuthenticated) {
     return (
@@ -48,28 +117,73 @@ const PostAd = () => {
     );
   }
 
-  const handleCategorySelect = (category) => {
-    setSelectedCategory(category);
+  // Show loading state while categories are being fetched
+  if (categoriesLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 pb-20 md:pb-0">
+        <Card className="p-8 text-center max-w-md">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <h2 className="text-xl font-bold mb-2">Loading...</h2>
+          <p className="text-gray-600">Please wait while we load the categories</p>
+        </Card>
+      </div>
+    );
+  }
+
+  const handleProductSelect = (product) => {
+    setSelectedProduct(product);
+    // Don't pre-fill title, let user enter manually
+    // Fetch categories for the selected product
+    fetchCategoriesByProduct(product._id);
     setCurrentStep(2);
   };
 
-  const handleSubcategorySelect = (subcategory) => {
-    setSelectedSubcategory(subcategory);
-    setFormData({ ...formData, category: selectedCategory.slug, subcategory: subcategory.name });
+  const handleCategorySelect = (category) => {
+    setSelectedCategory(category);
+    setFormData({ ...formData, category: category.slug });
     setCurrentStep(3);
   };
+
 
   const handleChange = (e) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value,
     });
+    
+    // If location field is changed, try to get coordinates
+    if (e.target.name === 'location' && e.target.value.trim()) {
+      getCoordinatesFromLocation(e.target.value);
+    }
+  };
+
+  // Get coordinates from location string
+  const getCoordinatesFromLocation = async (locationString) => {
+    try {
+      const response = await fetch(
+        `https://api.bigdatacloud.net/data/forward-geocode-client?query=${encodeURIComponent(locationString)}&localityLanguage=en`
+      );
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.results && data.results.length > 0) {
+          const result = data.results[0];
+          setCoordinates({ lat: result.latitude, lng: result.longitude });
+          setShowMap(true);
+        }
+      }
+    } catch (error) {
+      console.error('Error getting coordinates from location:', error);
+      // Set default coordinates for Indore if API fails
+      setCoordinates({ lat: 22.7196, lng: 75.8577 });
+      setShowMap(true);
+    }
   };
 
   const handleImageUpload = (e) => {
     const files = Array.from(e.target.files);
     
-    // Limit to 4 images minimum requirement
+    // Check if adding these files would exceed the minimum requirement
     if (images.length + files.length < 4) {
       setError('Please upload at least 4 images');
     } else {
@@ -79,7 +193,14 @@ const PostAd = () => {
     files.forEach((file) => {
       const reader = new FileReader();
       reader.onloadend = () => {
-        setImages((prev) => [...prev, reader.result]);
+        setImages((prev) => {
+          const newImages = [...prev, reader.result];
+          // Clear error if we now have enough images
+          if (newImages.length >= 4) {
+            setError('');
+          }
+          return newImages;
+        });
       };
       reader.readAsDataURL(file);
     });
@@ -101,6 +222,9 @@ const PostAd = () => {
         return;
       }
       
+      // Clear any previous errors
+      setError('');
+      
       const reader = new FileReader();
       reader.onloadend = () => {
         setVideo({
@@ -118,17 +242,100 @@ const PostAd = () => {
     setVideo(null);
   };
 
-  const handleSubmit = (e) => {
+  // Get current location
+  const getCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      setError('Geolocation is not supported by this browser');
+      return;
+    }
+
+    setLocationLoading(true);
+    setError('');
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        try {
+          const { latitude, longitude } = position.coords;
+          
+          // Use reverse geocoding to get address
+          const response = await fetch(
+            `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`
+          );
+          
+          if (response.ok) {
+            const data = await response.json();
+            const locationString = `${data.city || data.locality || 'Unknown'}, ${data.principalSubdivision || data.countryName || 'Unknown'}`;
+            setFormData({ ...formData, location: locationString });
+            setCoordinates({ lat: latitude, lng: longitude });
+            setShowMap(true);
+          } else {
+            // Fallback to coordinates if reverse geocoding fails
+            setFormData({ ...formData, location: `${latitude.toFixed(4)}, ${longitude.toFixed(4)}` });
+            setCoordinates({ lat: latitude, lng: longitude });
+            setShowMap(true);
+          }
+        } catch (error) {
+          console.error('Error getting location:', error);
+          setError('Failed to get location details');
+        } finally {
+          setLocationLoading(false);
+        }
+      },
+      (error) => {
+        console.error('Geolocation error:', error);
+        setLocationLoading(false);
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            setError('Location access denied by user');
+            break;
+          case error.POSITION_UNAVAILABLE:
+            setError('Location information unavailable');
+            break;
+          case error.TIMEOUT:
+            setError('Location request timed out');
+            break;
+          default:
+            setError('An unknown error occurred while getting location');
+            break;
+        }
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 300000 // 5 minutes
+      }
+    );
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+
+    console.log('Form submission started');
+    console.log('Form data:', formData);
+    console.log('Images count:', images.length);
+    console.log('Video:', video);
+    console.log('Selected product:', selectedProduct);
+    console.log('Selected category:', selectedCategory);
 
     if (!formData.title || !formData.description || !formData.location) {
       setError('Please fill in all required fields');
       return;
     }
 
-    if (!formData.pricePerDay && !formData.pricePerWeek && !formData.pricePerMonth) {
-      setError('Please specify at least one rental price');
+    if (!formData.pricePerDay) {
+      setError('Please specify rental price per day');
+      return;
+    }
+
+    // Validate field lengths
+    if (formData.title.length < 5) {
+      setError('Title must be at least 5 characters long');
+      return;
+    }
+
+    if (formData.description.length < 20) {
+      setError('Description must be at least 20 characters long');
       return;
     }
 
@@ -142,27 +349,104 @@ const PostAd = () => {
       return;
     }
 
-    const newItem = {
-      id: Date.now(),
-      ...formData,
-      price: Number(formData.pricePerMonth || formData.pricePerWeek || formData.pricePerDay),
-      pricePerDay: Number(formData.pricePerDay),
-      pricePerWeek: Number(formData.pricePerWeek),
-      pricePerMonth: Number(formData.pricePerMonth),
-      images: images,
-      video: video.preview,
-      subcategory: selectedSubcategory?.name || '',
-      owner: {
-        name: user.name,
-        avatar: user.avatar,
-      },
-      postedDate: new Date().toISOString(),
-      rating: 0,
-      reviews: [],
-    };
+    if (!selectedProduct || !selectedCategory) {
+      setError('Please select a product and category');
+      return;
+    }
 
-    addItem(newItem);
-    navigate('/dashboard');
+    console.log('All validations passed, proceeding with submission');
+
+    try {
+      setLoading(true);
+      setError('');
+
+      // Create FormData for file uploads
+      const formDataToSend = new FormData();
+      
+      // Add text fields (matching backend API expectations)
+      formDataToSend.append('title', formData.title);
+      formDataToSend.append('description', formData.description);
+      formDataToSend.append('priceAmount', formData.pricePerDay);
+      formDataToSend.append('pricePeriod', 'daily');
+      formDataToSend.append('product', selectedProduct.id);
+      formDataToSend.append('category', selectedCategory.id);
+      formDataToSend.append('location', formData.location);
+      formDataToSend.append('address', formData.location);
+      formDataToSend.append('city', 'Unknown'); // You can add city input field later
+      formDataToSend.append('state', 'Unknown'); // You can add state input field later
+      formDataToSend.append('pincode', '000000'); // You can add pincode input field later
+      formDataToSend.append('phone', user?.phone || '');
+      formDataToSend.append('email', user?.email || '');
+      formDataToSend.append('features', JSON.stringify(['Good condition', 'Well maintained'])); // Default features
+      formDataToSend.append('tags', JSON.stringify([selectedProduct.name, selectedCategory.name])); // Default tags
+      
+      if (coordinates) {
+        formDataToSend.append('coordinates', JSON.stringify(coordinates));
+      }
+
+      // Add images (convert base64 to files)
+      for (let i = 0; i < images.length; i++) {
+        try {
+          const response = await fetch(images[i]);
+          const blob = await response.blob();
+          const file = new File([blob], `image_${i}.jpg`, { type: 'image/jpeg' });
+          formDataToSend.append('images', file);
+        } catch (error) {
+          console.error('Error processing image:', error);
+          throw new Error('Failed to process images');
+        }
+      }
+
+      // Add video
+      try {
+        console.log('Processing video:', {
+          name: video.name,
+          type: video.file.type,
+          size: video.file.size,
+          preview: video.preview
+        });
+        
+        const videoResponse = await fetch(video.preview);
+        const videoBlob = await videoResponse.blob();
+        const videoFile = new File([videoBlob], video.name, { type: video.file.type });
+        
+        console.log('Video file created:', {
+          name: videoFile.name,
+          type: videoFile.type,
+          size: videoFile.size
+        });
+        
+        formDataToSend.append('video', videoFile);
+      } catch (error) {
+        console.error('Error processing video:', error);
+        throw new Error('Failed to process video');
+      }
+
+      // Submit to backend
+      const response = await apiService.createRentalListing(formDataToSend);
+
+      if (response.success) {
+        // Show success message
+        setError(''); // Clear any previous errors
+        // Show success notification
+        const successMessage = 'Rental listing submitted successfully! It will be reviewed by our admin team before going live.';
+        alert(successMessage); // You can replace this with a proper toast notification
+        navigate('/dashboard', { state: { activeTab: 'my-ads' } });
+      } else {
+        // Handle validation errors
+        if (response.errors) {
+          const errorMessages = Object.values(response.errors).join(', ');
+          setError(`Validation failed: ${errorMessages}`);
+        } else {
+          setError(response.message || 'Failed to submit rental listing');
+        }
+      }
+    } catch (error) {
+      console.error('Error submitting rental listing:', error);
+      setError(error.response?.data?.message || 'Failed to submit rental listing. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -172,8 +456,8 @@ const PostAd = () => {
         <div className="mb-4 md:mb-8">
           <div className="flex items-center justify-center gap-1 md:gap-4">
             {[
-              { step: 1, label: 'Category' },
-              { step: 2, label: 'Subcategory' },
+              { step: 1, label: 'Product' },
+              { step: 2, label: 'Category' },
               { step: 3, label: 'Details' }
             ].map((item, index) => (
               <div key={item.step} className="flex items-center">
@@ -203,38 +487,69 @@ const PostAd = () => {
           </div>
         </div>
 
-        {/* Step 1: Category Selection */}
+        {/* Step 1: Product Selection */}
         {currentStep === 1 && (
           <Card className="p-4 md:p-8">
             <div className="mb-4 md:mb-6">
-              <h2 className="text-lg md:text-3xl font-black text-gray-900 mb-1 md:mb-2">Select Category</h2>
-              <p className="text-xs md:text-base text-gray-600">Choose the category that best fits your item</p>
+              <h2 className="text-lg md:text-3xl font-black text-gray-900 mb-1 md:mb-2">Select Product</h2>
+              <p className="text-xs md:text-base text-gray-600">Choose the Product that best fits your item</p>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-2 md:gap-4">
-              {categories.map((category) => (
-                <button
-                  key={category.id}
-                  onClick={() => handleCategorySelect(category)}
-                  className="group bg-white border-2 border-gray-200 rounded-xl md:rounded-2xl p-3 md:p-6 hover:border-blue-500 hover:shadow-lg transition-all"
-                >
-                  <div className="w-12 h-12 md:w-20 md:h-20 mx-auto mb-2 md:mb-3 bg-gray-100 rounded-xl md:rounded-2xl flex items-center justify-center p-2 md:p-3 group-hover:bg-blue-50 transition-all">
-                    <img
-                      src={imageMap[category.image]}
-                      alt={category.name}
-                      className="w-full h-full object-contain group-hover:scale-110 transition-transform"
-                    />
-                  </div>
-                  <h3 className="font-bold text-xs md:text-base text-gray-900 group-hover:text-blue-600 transition-colors">
-                    {category.name}
-                  </h3>
-                </button>
-              ))}
+            {/* Search Bar */}
+            <div className="mb-4 md:mb-6">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                <input
+                  type="text"
+                  placeholder="Search products..."
+                  value={productSearch}
+                  onChange={(e) => setProductSearch(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 md:py-3 text-sm md:text-base border-2 border-gray-200 rounded-lg md:rounded-xl focus:ring-2 focus:ring-blue-200 focus:border-blue-500 outline-none transition-all"
+                />
+              </div>
             </div>
+
+            {/* Products Grid */}
+            {loading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="animate-spin text-blue-600" size={32} />
+                <span className="ml-2 text-gray-600">Loading products...</span>
+              </div>
+            ) : products.length > 0 ? (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 md:gap-4">
+                {products.map((product) => (
+                  <button
+                    key={product._id}
+                    onClick={() => handleProductSelect(product)}
+                    className="group bg-white border-2 border-gray-200 rounded-xl md:rounded-2xl p-3 md:p-4 hover:border-blue-500 hover:shadow-lg transition-all"
+                  >
+                    <div className="w-full h-16 md:h-20 mb-2 md:mb-3 bg-gray-100 rounded-lg md:rounded-xl flex items-center justify-center p-2 group-hover:bg-blue-50 transition-all">
+                      {product.images && product.images.length > 0 ? (
+                        <img
+                          src={product.images[0].url}
+                          alt={product.name}
+                          className="w-full h-full object-contain group-hover:scale-110 transition-transform"
+                        />
+                      ) : (
+                        <div className="text-gray-400 text-xs md:text-sm">No Image</div>
+                      )}
+                    </div>
+                    <h3 className="font-bold text-xs md:text-sm text-gray-900 group-hover:text-blue-600 transition-colors text-center">
+                      {product.name}
+                    </h3>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-gray-600 mb-4">No products found</p>
+                <Button onClick={() => setProductSearch('')}>Clear Search</Button>
+              </div>
+            )}
           </Card>
         )}
 
-        {/* Step 2: Subcategory Selection */}
+        {/* Step 2: Category Selection */}
         {currentStep === 2 && (
           <Card className="p-4 md:p-8">
             <div className="mb-4 md:mb-6">
@@ -243,37 +558,50 @@ const PostAd = () => {
                 className="flex items-center gap-1.5 text-gray-600 hover:text-gray-900 font-semibold mb-3 md:mb-4 group"
               >
                 <ArrowLeft size={16} className="md:w-[18px] md:h-[18px] group-hover:-translate-x-1 transition-transform" />
-                <span className="text-xs md:text-sm">Back to Categories</span>
+                <span className="text-xs md:text-sm">Back to Products</span>
               </button>
               <h2 className="text-lg md:text-3xl font-black text-gray-900 mb-1 md:mb-2">
-                Select Subcategory
+                Select Category
               </h2>
               <p className="text-xs md:text-base text-gray-600">
-                Refine your listing in <span className="font-bold text-blue-600">{selectedCategory?.name}</span>
+                Choose category for <span className="font-bold text-blue-600">{selectedProduct?.name}</span>
               </p>
             </div>
 
-            {subcategories.length > 0 ? (
+            {categoriesLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="animate-spin text-blue-600" size={32} />
+                <span className="ml-2 text-gray-600">Loading categories...</span>
+              </div>
+            ) : productCategories.length > 0 ? (
               <div className="grid grid-cols-2 md:grid-cols-3 gap-2 md:gap-4">
-                {subcategories.map((subcat, index) => (
+                {productCategories.map((category) => (
                   <button
-                    key={index}
-                    onClick={() => handleSubcategorySelect(subcat)}
-                    className="bg-white border-2 border-gray-200 rounded-xl md:rounded-2xl p-3 md:p-6 hover:border-blue-500 hover:shadow-lg transition-all group"
+                    key={category.id}
+                    onClick={() => handleCategorySelect(category)}
+                    className="group bg-white border-2 border-gray-200 rounded-xl md:rounded-2xl p-3 md:p-6 hover:border-blue-500 hover:shadow-lg transition-all"
                   >
-                    <div className="text-2xl md:text-5xl mb-1.5 md:mb-3">{subcat.icon}</div>
+                    <div className="w-12 h-12 md:w-20 md:h-20 mx-auto mb-2 md:mb-3 bg-gray-100 rounded-xl md:rounded-2xl flex items-center justify-center p-2 md:p-3 group-hover:bg-blue-50 transition-all">
+                      {category.image ? (
+                        <img
+                          src={category.image}
+                          alt={category.name}
+                          className="w-full h-full object-contain group-hover:scale-110 transition-transform"
+                        />
+                      ) : (
+                        <div className="text-gray-400 text-xs md:text-sm">No Image</div>
+                      )}
+                    </div>
                     <h3 className="font-bold text-xs md:text-base text-gray-900 group-hover:text-blue-600 transition-colors">
-                      {subcat.name}
+                      {category.name}
                     </h3>
                   </button>
                 ))}
               </div>
             ) : (
-              <div className="text-center py-6 md:py-8">
-                <p className="text-xs md:text-base text-gray-600 mb-3 md:mb-4">No subcategories available for this category</p>
-                <Button onClick={() => { setSelectedSubcategory({ name: 'General' }); setCurrentStep(3); }}>
-                  Continue Without Subcategory
-                </Button>
+              <div className="text-center py-8">
+                <p className="text-gray-600 mb-4">No categories found for this product</p>
+                <Button onClick={() => setCurrentStep(1)}>Back to Products</Button>
               </div>
             )}
           </Card>
@@ -288,11 +616,11 @@ const PostAd = () => {
                 className="flex items-center gap-1.5 text-gray-600 hover:text-gray-900 font-semibold mb-3 md:mb-4 group"
               >
                 <ArrowLeft size={16} className="md:w-[18px] md:h-[18px] group-hover:-translate-x-1 transition-transform" />
-                <span className="text-xs md:text-sm">Back to Subcategories</span>
+                <span className="text-xs md:text-sm">Back to Categories</span>
               </button>
               <h2 className="text-lg md:text-3xl font-black text-gray-900 mb-1 md:mb-2">Product Details</h2>
               <p className="text-xs md:text-base text-gray-600">
-                {selectedCategory?.name} → <span className="font-bold text-blue-600">{selectedSubcategory?.name}</span>
+                {selectedProduct?.name} → <span className="font-bold text-blue-600">{selectedCategory?.name}</span>
               </p>
             </div>
 
@@ -302,7 +630,10 @@ const PostAd = () => {
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-4 md:space-y-6">
+            <form onSubmit={(e) => {
+              console.log('Form onSubmit triggered!');
+              handleSubmit(e);
+            }} className="space-y-4 md:space-y-6">
               {/* Title */}
               <div>
                 <label className="block text-xs md:text-sm font-bold text-gray-700 mb-1.5 md:mb-2">
@@ -337,44 +668,18 @@ const PostAd = () => {
 
               {/* Pricing */}
               <div>
-                <label className="block text-xs md:text-sm font-bold text-gray-700 mb-2 md:mb-3">
-                  Rental Pricing * <span className="text-[10px] md:text-xs font-normal text-gray-500">(At least one required)</span>
+                <label className="block text-xs md:text-sm font-bold text-gray-700 mb-1.5 md:mb-2">
+                  Rental Price Per Day *
                 </label>
-                <div className="grid grid-cols-3 gap-2 md:gap-4">
-                  <div>
-                    <label className="block text-[10px] md:text-xs text-gray-600 mb-1">Per Day</label>
-                    <input
-                      type="number"
-                      name="pricePerDay"
-                      value={formData.pricePerDay}
-                      onChange={handleChange}
-                      placeholder="₹500"
-                      className="w-full px-2 md:px-3 py-1.5 md:py-2 text-sm md:text-base border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] md:text-xs text-gray-600 mb-1">Per Week</label>
-                    <input
-                      type="number"
-                      name="pricePerWeek"
-                      value={formData.pricePerWeek}
-                      onChange={handleChange}
-                      placeholder="₹3000"
-                      className="w-full px-2 md:px-3 py-1.5 md:py-2 text-sm md:text-base border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] md:text-xs text-gray-600 mb-1">Per Month</label>
-                    <input
-                      type="number"
-                      name="pricePerMonth"
-                      value={formData.pricePerMonth}
-                      onChange={handleChange}
-                      placeholder="₹10000"
-                      className="w-full px-2 md:px-3 py-1.5 md:py-2 text-sm md:text-base border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 outline-none"
-                    />
-                  </div>
-                </div>
+                <input
+                  type="number"
+                  name="pricePerDay"
+                  value={formData.pricePerDay}
+                  onChange={handleChange}
+                  placeholder="₹500"
+                  className="w-full px-3 md:px-4 py-2 md:py-3 text-sm md:text-base border-2 border-gray-200 rounded-lg md:rounded-xl focus:ring-2 md:focus:ring-4 focus:ring-blue-200 focus:border-blue-500 outline-none transition-all"
+                  required
+                />
               </div>
 
               {/* Location */}
@@ -390,10 +695,99 @@ const PostAd = () => {
                     value={formData.location}
                     onChange={handleChange}
                     placeholder="e.g., Mumbai, Maharashtra"
-                    className="w-full pl-10 md:pl-12 pr-3 md:pr-4 py-2 md:py-3 text-sm md:text-base border-2 border-gray-200 rounded-lg md:rounded-xl focus:ring-2 md:focus:ring-4 focus:ring-blue-200 focus:border-blue-500 outline-none transition-all"
+                    className="w-full pl-10 md:pl-12 pr-12 md:pr-14 py-2 md:py-3 text-sm md:text-base border-2 border-gray-200 rounded-lg md:rounded-xl focus:ring-2 md:focus:ring-4 focus:ring-blue-200 focus:border-blue-500 outline-none transition-all"
                     required
                   />
+                  <button
+                    type="button"
+                    onClick={getCurrentLocation}
+                    disabled={locationLoading}
+                    className="absolute right-3 md:right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="Get current location"
+                  >
+                    {locationLoading ? (
+                      <Loader2 className="animate-spin" size={16} />
+                    ) : (
+                      <Navigation size={16} />
+                    )}
+                  </button>
                 </div>
+                
+                {/* Location Map */}
+                {formData.location && showMap && coordinates && (
+                  <div className="mt-3">
+                    <div 
+                      className="w-full h-32 md:h-40 rounded-lg md:rounded-xl overflow-hidden border-2 border-gray-200 relative group bg-white cursor-pointer"
+                      onClick={() => {
+                        const searchQuery = `${coordinates.lat},${coordinates.lng}`;
+                        const googleMapsUrl = `https://www.google.com/maps?q=${searchQuery}`;
+                        window.open(googleMapsUrl, '_blank');
+                      }}
+                      title="Click to open in Google Maps"
+                    >
+                      {/* Map Visual Representation */}
+                      <div className="w-full h-full bg-gradient-to-br from-green-200 via-blue-100 to-green-200 relative overflow-hidden">
+                        {/* Map-like grid pattern */}
+                        <div className="absolute inset-0 opacity-30">
+                          <div className="grid grid-cols-8 grid-rows-4 h-full">
+                            {Array.from({ length: 32 }).map((_, i) => (
+                              <div key={i} className="border border-gray-400"></div>
+                            ))}
+                          </div>
+                        </div>
+                        
+                        {/* Roads representation */}
+                        <div className="absolute top-1/2 left-0 w-full h-2 bg-gray-500 opacity-70"></div>
+                        <div className="absolute top-0 left-1/2 w-2 h-full bg-gray-500 opacity-70"></div>
+                        
+                        {/* Location marker */}
+                        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+                          <div className="w-6 h-6 bg-red-500 rounded-full border-3 border-white shadow-lg flex items-center justify-center">
+                            <div className="w-2 h-2 bg-white rounded-full"></div>
+                          </div>
+                          {/* Pulse animation */}
+                          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-8 h-8 bg-red-500 rounded-full opacity-30 animate-ping"></div>
+                        </div>
+                        
+                        {/* Location text overlay */}
+                        <div className="absolute bottom-2 left-2 right-2 bg-white bg-opacity-90 rounded px-2 py-1">
+                          <p className="text-xs font-semibold text-gray-800 text-center">
+                            📍 {formData.location}
+                          </p>
+                        </div>
+                        
+                        {/* Overlay for click indication */}
+                        <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all duration-200 flex items-center justify-center">
+                          <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-white bg-opacity-90 rounded-full p-2 shadow-lg">
+                            <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                            </svg>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Coordinates and link */}
+                    <div className="mt-2 flex items-center justify-between">
+                      <div className="flex items-center space-x-2 text-xs text-gray-600">
+                        <span>📍</span>
+                        <span>
+                          {coordinates.lat.toFixed(4)}, {coordinates.lng.toFixed(4)}
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => {
+                          const searchQuery = `${coordinates.lat},${coordinates.lng}`;
+                          const googleMapsUrl = `https://www.google.com/maps?q=${searchQuery}`;
+                          window.open(googleMapsUrl, '_blank');
+                        }}
+                        className="text-xs text-blue-600 font-medium hover:text-blue-800 transition-colors"
+                      >
+                        Open in Google Maps →
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Condition */}
@@ -414,19 +808,6 @@ const PostAd = () => {
                 </select>
               </div>
 
-              {/* Available From */}
-              <div>
-                <label className="block text-xs md:text-sm font-bold text-gray-700 mb-1.5 md:mb-2">
-                  Available From
-                </label>
-                <input
-                  type="date"
-                  name="availableFrom"
-                  value={formData.availableFrom}
-                  onChange={handleChange}
-                  className="w-full px-3 md:px-4 py-2 md:py-3 text-sm md:text-base border-2 border-gray-200 rounded-lg md:rounded-xl focus:ring-2 md:focus:ring-4 focus:ring-blue-200 focus:border-blue-500 outline-none transition-all"
-                />
-              </div>
 
               {/* Images Upload */}
               <div>
@@ -512,10 +893,30 @@ const PostAd = () => {
               <div className="pt-2 md:pt-4">
                 <Button
                   type="submit"
-                  className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 py-3 md:py-4 text-base md:text-lg font-bold shadow-lg"
+                  disabled={loading}
+                  onClick={(e) => {
+                    console.log('Submit button clicked!');
+                    console.log('Loading state:', loading);
+                    console.log('Form data:', formData);
+                    console.log('Images:', images.length);
+                    console.log('Video:', video);
+                    console.log('Selected product:', selectedProduct);
+                    console.log('Selected category:', selectedCategory);
+                    // Let the form handle the submission
+                  }}
+                  className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 py-3 md:py-4 text-base md:text-lg font-bold shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Post Rental
-                  <ChevronRight className="ml-2" size={18} />
+                  {loading ? (
+                    <>
+                      <Loader2 className="animate-spin mr-2" size={18} />
+                      Submitting...
+                    </>
+                  ) : (
+                    <>
+                      Post Rental
+                      <ChevronRight className="ml-2" size={18} />
+                    </>
+                  )}
                 </Button>
               </div>
             </form>

@@ -217,6 +217,21 @@ const AdminLogin = () => {
                 </button>
               </form>
 
+              {/* Default Admin Credentials */}
+              <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-xl">
+                <div className="text-center">
+                  <p className="text-blue-800 text-sm font-semibold mb-2">
+                    Default Admin Credentials:
+                  </p>
+                  <p className="text-blue-700 text-xs">
+                    Email: <span className="font-mono">panchalajay717@gmail.com</span>
+                  </p>
+                  <p className="text-blue-700 text-xs">
+                    Password: <span className="font-mono">admin123</span>
+                  </p>
+                </div>
+              </div>
+
               {/* Signup Link */}
               <div className="mt-6 pt-6 border-t border-gray-200">
                 <div className="text-center">

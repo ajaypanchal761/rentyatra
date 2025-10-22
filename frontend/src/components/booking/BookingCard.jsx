@@ -15,7 +15,21 @@ const BookingCard = ({ item }) => {
   const [endDate, setEndDate] = useState(null);
   const [showCalendar, setShowCalendar] = useState(false);
 
+  // Safety check for undefined item
+  if (!item) {
+    return (
+      <div className="bg-white rounded-2xl border-2 border-gray-200 p-4 md:p-6">
+        <div className="text-center text-gray-500">
+          <p>Item information not available</p>
+        </div>
+      </div>
+    );
+  }
+
   const handleDateChange = (start, end) => {
+    console.log('BookingCard handleDateChange called with:');
+    console.log('Start:', start?.toDateString());
+    console.log('End:', end?.toDateString());
     setStartDate(start);
     setEndDate(end);
   };
@@ -31,40 +45,14 @@ const BookingCard = ({ item }) => {
     const days = calculateDays();
     if (days === 0) return 0;
 
-    // Use monthly rate if >= 28 days
-    if (days >= 28 && item.pricePerMonth) {
-      const months = Math.ceil(days / 30);
-      return months * item.pricePerMonth;
-    }
-    
-    // Use weekly rate if >= 7 days
-    if (days >= 7 && item.pricePerWeek) {
-      const weeks = Math.ceil(days / 7);
-      return weeks * item.pricePerWeek;
-    }
-    
-    // Use daily rate
-    if (item.pricePerDay) {
-      return days * item.pricePerDay;
-    }
-
-    // Fallback to base price (assuming it's monthly)
-    return item.price;
+    // Simple calculation: days × daily rate
+    const dailyRate = item.pricePerDay || item.price || 0;
+    return days * dailyRate;
   };
 
   const getRentalPeriod = () => {
     const days = calculateDays();
     if (days === 0) return '';
-    
-    if (days >= 28) {
-      const months = Math.ceil(days / 30);
-      return `${months} ${months === 1 ? 'month' : 'months'}`;
-    }
-    
-    if (days >= 7) {
-      const weeks = Math.ceil(days / 7);
-      return `${weeks} ${weeks === 1 ? 'week' : 'weeks'}`;
-    }
     
     return `${days} ${days === 1 ? 'day' : 'days'}`;
   };
@@ -116,19 +104,9 @@ const BookingCard = ({ item }) => {
         <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-2">Book this item</h3>
         <div className="flex items-baseline gap-2">
           <span className="text-2xl md:text-3xl font-black text-blue-600">
-            ₹{item.pricePerDay || item.price}
+            ₹{item.pricePerDay || item.price || 0}
           </span>
           <span className="text-sm text-gray-600">/day</span>
-        </div>
-        
-        {/* Additional pricing info */}
-        <div className="mt-2 text-xs text-gray-600 space-y-0.5">
-          {item.pricePerWeek && (
-            <div>₹{item.pricePerWeek}/week • Save {Math.round((1 - (item.pricePerWeek / (item.pricePerDay * 7))) * 100)}%</div>
-          )}
-          {item.pricePerMonth && (
-            <div>₹{item.pricePerMonth}/month • Save {Math.round((1 - (item.pricePerMonth / (item.pricePerDay * 30))) * 100)}%</div>
-          )}
         </div>
       </div>
 

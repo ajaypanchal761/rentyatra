@@ -47,6 +47,10 @@ const adminSchema = new mongoose.Schema({
       type: Boolean,
       default: true
     },
+    rentalManagement: {
+      type: Boolean,
+      default: true
+    },
     analytics: {
       type: Boolean,
       default: true

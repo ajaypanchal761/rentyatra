@@ -6,6 +6,7 @@ import UserManagementView from '../components/views/UserManagementView';
 import ProductManagementView from '../components/views/ProductManagementView';
 import CategoryManagementView from '../components/views/CategoryManagementView';
 import BannerManagementView from '../components/views/BannerManagementView';
+import RentalListingManagementView from '../components/views/RentalListingManagementView';
 
 // Simple placeholder component for other sections
 function PlaceholderView({ title }) {
@@ -38,6 +39,8 @@ export default function AdminDashboard() {
                 return <ProductManagementView />;
             case 'Categories':
                 return <CategoryManagementView />;
+            case 'Rental listing':
+                return <RentalListingManagementView />;
             case 'Subscriptions':
                 return <PlaceholderView title="Subscription Management" />;
             case 'Boosts':
