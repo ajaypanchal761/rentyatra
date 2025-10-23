@@ -249,6 +249,7 @@ class ApiService {
     });
   }
 
+
   async getUserStats() {
     return this.request('/users/stats');
   }
@@ -1655,6 +1656,33 @@ class ApiService {
     const url = `${this.baseURL}/rental-requests/my-requests?${params.toString()}`;
     const config = {
       headers: this.getHeaders(),
+    };
+
+    try {
+      const response = await fetch(url, config);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Something went wrong');
+      }
+
+      return data;
+    } catch (error) {
+      console.error('API Request Error:', error);
+      throw error;
+    }
+  }
+
+  // Update user's rental request
+  async updateRentalRequest(rentalId, updateData) {
+    const url = `${this.baseURL}/rental-requests/${rentalId}`;
+    const config = {
+      method: 'PUT',
+      headers: {
+        ...this.getHeaders(),
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(updateData),
     };
 
     try {

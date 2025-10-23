@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { 
-  Package, Heart, MessageCircle, User, Edit, Trash2, Calendar, Zap, 
+  Package, MessageCircle, User, Edit, Trash2, Calendar, Zap, 
   CreditCard, Rocket, LogOut, MapPin, Eye, Menu, X, Home, 
-  Star, History, Briefcase, Globe, Bell, Share2, ThumbsUp, 
-  Mail, Info, FileText, Lock, UserX, ChevronRight, Shield, BadgeCheck, Clock
+  Star, History, Share2, ShoppingCart,
+  Mail, Info, FileText, Lock, UserX, ChevronRight, Shield, BadgeCheck, Clock, Save
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useApp } from '../../contexts/AppContext';
@@ -28,7 +28,32 @@ const Dashboard = () => {
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [rentalListings, setRentalListings] = useState([]);
   const [loadingRentals, setLoadingRentals] = useState(false);
+  const [editingListing, setEditingListing] = useState(null);
+  const [editForm, setEditForm] = useState({
+    description: '',
+    amount: ''
+  });
+  const [profileForm, setProfileForm] = useState({
+    street: '',
+    city: '',
+    state: '',
+    pincode: '',
+    landmark: ''
+  });
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [localProfileImage, setLocalProfileImage] = useState(null);
   const navigate = useNavigate();
+
+  // Cleanup object URL on component unmount
+  useEffect(() => {
+    return () => {
+      if (localProfileImage && localProfileImage.startsWith('blob:')) {
+        URL.revokeObjectURL(localProfileImage);
+      }
+    };
+  }, [localProfileImage]);
 
   // Handle navigation state (e.g., from booking confirmation)
   useEffect(() => {
@@ -45,24 +70,44 @@ const Dashboard = () => {
     if (pathSegments.length > 2 && pathSegments[1] === 'dashboard') {
       const tabFromUrl = pathSegments[2];
       if (tabFromUrl) {
+        // Map 'account' to 'profile-menu' for the account section
+        if (tabFromUrl === 'account') {
+          setActiveTab('profile-menu');
+        } else {
         setActiveTab(tabFromUrl);
+        }
       }
     }
   }, [location.pathname]);
 
-  // Set default tab based on screen size
+  // Set default tab based on screen size and route
   useEffect(() => {
     const checkScreenSize = () => {
       const isMobile = window.innerWidth < 768;
-      if (!isMobile && activeTab === 'profile-menu') {
+      // Only change tab if we're on the base dashboard route and it's the initial load
+      // But don't change if we're explicitly on the account route
+      if (!isMobile && activeTab === 'profile-menu' && location.pathname === '/dashboard') {
+        // Check if we came from account navigation (no specific tab in URL)
+        const hasTabInUrl = location.pathname.split('/').length > 2;
+        if (!hasTabInUrl) {
         setActiveTab('my-ads');
+        }
       }
     };
     
-    checkScreenSize();
+    // Only run on initial mount, not on every activeTab change
+    const isMobile = window.innerWidth < 768;
+    if (!isMobile && location.pathname === '/dashboard') {
+      // Check if we came from account navigation (no specific tab in URL)
+      const hasTabInUrl = location.pathname.split('/').length > 2;
+      if (!hasTabInUrl) {
+        setActiveTab('my-ads');
+      }
+    }
+    
     window.addEventListener('resize', checkScreenSize);
     return () => window.removeEventListener('resize', checkScreenSize);
-  }, [activeTab]);
+  }, []); // Remove activeTab dependency to prevent infinite loops
 
   const handleLogout = () => {
     logout();
@@ -94,6 +139,85 @@ const Dashboard = () => {
     }
   }, [activeTab, isAuthenticated]);
 
+  // Initialize profile form with user data
+  useEffect(() => {
+    if (user) {
+      console.log('User data available:', user);
+      console.log('User address data:', user.address);
+      
+      if (user.address) {
+        console.log('Initializing profile form with user address data:', user.address);
+        setProfileForm({
+          street: user.address.street || '',
+          city: user.address.city || '',
+          state: user.address.state || '',
+          pincode: user.address.pincode || '',
+          landmark: user.address.landmark || ''
+        });
+      } else {
+        console.log('No address data found in user object');
+        // Initialize with empty values if no address data
+        setProfileForm({
+          street: '',
+          city: '',
+          state: '',
+          pincode: '',
+          landmark: ''
+        });
+      }
+    }
+  }, [user]);
+
+  // Also initialize when activeTab changes to profile
+  useEffect(() => {
+    if (activeTab === 'profile' && user && user.address) {
+      console.log('Profile tab activated, loading user address data:', user.address);
+      setProfileForm({
+        street: user.address.street || '',
+        city: user.address.city || '',
+        state: user.address.state || '',
+        pincode: user.address.pincode || '',
+        landmark: user.address.landmark || ''
+      });
+    }
+  }, [activeTab, user]);
+
+  // Force refresh user data when profile tab is accessed
+  useEffect(() => {
+    if (activeTab === 'profile' && isAuthenticated) {
+      // Refresh user data to get latest address information
+      const refreshUserData = async () => {
+        try {
+          console.log('Refreshing user data for profile tab...');
+          const response = await apiService.getMe();
+          console.log('API response:', response);
+          
+          if (response.success && response.data) {
+            console.log('Refreshed user data:', response.data);
+            console.log('Address data from API:', response.data.address);
+            
+            // Directly update the form with fresh data
+            if (response.data.address) {
+              setProfileForm({
+                street: response.data.address.street || '',
+                city: response.data.address.city || '',
+                state: response.data.address.state || '',
+                pincode: response.data.address.pincode || '',
+                landmark: response.data.address.landmark || ''
+              });
+              console.log('Form updated with fresh data');
+            }
+          }
+        } catch (error) {
+          console.error('Error refreshing user data:', error);
+        }
+      };
+      refreshUserData();
+    }
+  }, [activeTab, isAuthenticated]);
+
+
+
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
@@ -106,36 +230,28 @@ const Dashboard = () => {
     );
   }
 
-  const myAds = items.filter((item) => item.owner.name === user.name);
-  const favoriteItems = items.filter((item) => favorites.includes(item.id));
 
   // Grouped menu items for better organization
   const menuSections = [
     {
       title: '',
       items: [
-        { id: 'my-ads', label: 'My Rentals', icon: Package, count: rentalListings.length, color: 'blue' },
-        { id: 'featured-ads', label: 'My Featured Ads', icon: Star, color: 'yellow' },
+        { id: 'profile', label: 'Profile', icon: User, color: 'blue' },
         { id: 'bookings', label: 'My Bookings', icon: Calendar, count: bookings.length, color: 'green' },
-        { id: 'favorites', label: 'Favourites', icon: Heart, count: favoriteItems.length, color: 'red' },
-        { id: 'messages', label: 'Messages', icon: MessageCircle, count: 0, color: 'purple' },
+        { id: 'featured-ads', label: 'My Featured Ads', icon: Star, color: 'yellow' },
       ]
     },
     {
       title: 'Account & Services',
       items: [
+        { id: 'buy-subscription', label: 'Buy Subscription', icon: ShoppingCart, color: 'purple' },
         { id: 'subscription', label: 'My Subscription', icon: CreditCard, color: 'indigo' },
-        { id: 'boosts', label: 'My Boosts', icon: Zap, color: 'orange' },
         { id: 'transaction-history', label: 'Transaction History', icon: History, color: 'teal' },
-        { id: 'my-reviews', label: 'My Reviews', icon: ThumbsUp, color: 'pink' },
-        { id: 'job-applications', label: 'My Job Applications', icon: Briefcase, color: 'orange' },
       ]
     },
     {
       title: 'Settings',
       items: [
-        { id: 'language', label: 'Language', icon: Globe, color: 'cyan' },
-        { id: 'notifications', label: 'Notifications', icon: Bell, color: 'amber' },
       ]
     },
     {
@@ -143,7 +259,6 @@ const Dashboard = () => {
       items: [
         { id: 'faqs', label: 'FAQs', icon: Info, color: 'lime' },
         { id: 'share-app', label: 'Share the App', icon: Share2, color: 'emerald' },
-        { id: 'rate-us', label: 'Rate Us', icon: Star, color: 'yellow' },
         { id: 'contact-us', label: 'Contact Us', icon: Mail, color: 'blue' },
         { id: 'about-us', label: 'About Us', icon: Info, color: 'slate' },
       ]
@@ -173,6 +288,187 @@ const Dashboard = () => {
   const handleBoostProduct = (item) => {
     setSelectedProduct(item);
     setBoostModalOpen(true);
+  };
+
+  const handleEditListing = (listing) => {
+    setEditingListing(listing._id);
+    setEditForm({
+      description: listing.description || '',
+      amount: listing.price?.amount || ''
+    });
+  };
+
+  const handleSaveEdit = async (listingId) => {
+    try {
+      console.log('Saving edit for listing:', listingId, editForm);
+      
+      // Call the API to update the listing
+      const response = await apiService.updateRentalRequest(listingId, {
+        description: editForm.description,
+        priceAmount: editForm.amount
+      });
+      
+      if (response.success) {
+        // Update the local state with the response data
+        setRentalListings(prev => prev.map(listing => 
+          listing._id === listingId 
+            ? {
+                ...listing,
+                description: editForm.description,
+                price: { ...listing.price, amount: parseFloat(editForm.amount) }
+              }
+            : listing
+        ));
+        
+        setEditingListing(null);
+        setEditForm({ description: '', amount: '' });
+        
+        // Show success message (you can add a toast notification here)
+        console.log('Rental request updated successfully');
+      }
+    } catch (error) {
+      console.error('Error updating listing:', error);
+      // Show error message to user (you can add a toast notification here)
+      alert('Failed to update rental request. Please try again.');
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingListing(null);
+    setEditForm({ description: '', amount: '' });
+  };
+
+  // Save profile information
+  const handleSaveProfile = async () => {
+    setSavingProfile(true);
+    try {
+      console.log('Saving profile with data:', {
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        address: {
+          street: profileForm.street,
+          city: profileForm.city,
+          state: profileForm.state,
+          pincode: profileForm.pincode,
+          landmark: profileForm.landmark
+        }
+      });
+
+      const response = await apiService.updateUserProfile({
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        address: {
+          street: profileForm.street,
+          city: profileForm.city,
+          state: profileForm.state,
+          pincode: profileForm.pincode,
+          landmark: profileForm.landmark
+        }
+      });
+      
+      if (response.success) {
+        console.log('Profile updated successfully:', response);
+        alert('Profile updated successfully!');
+        
+        // Refresh user data to get updated information
+        try {
+          const refreshResponse = await apiService.getMe();
+          if (refreshResponse.success && refreshResponse.data) {
+            console.log('User data refreshed after profile update');
+            // The user context should automatically update
+          }
+        } catch (refreshError) {
+          console.error('Error refreshing user data:', refreshError);
+        }
+      } else {
+        console.error('Profile update failed:', response);
+        alert('Failed to update profile. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      alert('Failed to update profile. Please try again.');
+    } finally {
+      setSavingProfile(false);
+    }
+  };
+
+  // Handle image upload
+  const handleImageUpload = async (file, type) => {
+    if (!file) return;
+    
+    setUploadingImage(true);
+    
+    // Immediately show the selected image locally
+    if (type === 'profile') {
+      const imageUrl = URL.createObjectURL(file);
+      setLocalProfileImage(imageUrl);
+    }
+    
+    try {
+      console.log('Uploading image:', { type, file: file.name });
+      
+      let response;
+      
+      if (type === 'profile') {
+        // Upload profile image
+        response = await apiService.uploadProfileImage(file);
+      } else if (type === 'aadhar-front' || type === 'aadhar-back') {
+        // For Aadhar cards, we need to handle both front and back
+        // For now, let's upload them separately
+        if (type === 'aadhar-front') {
+          // Create a dummy back image or use existing one
+          const dummyFile = new File([''], 'dummy.txt', { type: 'text/plain' });
+          response = await apiService.uploadAadharCard(null, file, dummyFile);
+        } else {
+          // For back image, we might need to handle this differently
+          // Let's use the profile upload for now
+          response = await apiService.uploadProfileImage(file);
+        }
+      } else {
+        // Default to profile image upload
+        response = await apiService.uploadProfileImage(file);
+      }
+      
+      if (response.success) {
+        console.log('Image uploaded successfully:', response);
+        alert('Image uploaded successfully!');
+        
+        // Refresh user data to get updated image URLs
+        try {
+          const refreshResponse = await apiService.getMe();
+          if (refreshResponse.success && refreshResponse.data) {
+            console.log('User data refreshed after image upload');
+            console.log('Updated user object:', refreshResponse.data);
+            console.log('Profile image URL:', refreshResponse.data.profileImage || refreshResponse.data.profile?.image || refreshResponse.data.image);
+            
+            // Update local image with the server URL
+            if (type === 'profile' && (refreshResponse.data.profileImage || refreshResponse.data.profile?.image || refreshResponse.data.image)) {
+              setLocalProfileImage(refreshResponse.data.profileImage || refreshResponse.data.profile?.image || refreshResponse.data.image);
+            }
+          }
+        } catch (refreshError) {
+          console.error('Error refreshing user data:', refreshError);
+        }
+      } else {
+        console.error('Image upload failed:', response);
+        alert('Failed to upload image. Please try again.');
+        // Reset local image on failure
+        if (type === 'profile') {
+          setLocalProfileImage(null);
+        }
+      }
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      alert('Failed to upload image. Please try again.');
+      // Reset local image on error
+      if (type === 'profile') {
+        setLocalProfileImage(null);
+      }
+    } finally {
+      setUploadingImage(false);
+    }
   };
 
   const handleMenuClick = (tabId) => {
@@ -228,199 +524,9 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex">
-      {/* Sidebar - Desktop */}
-      <aside className="hidden md:block w-72 bg-white border-r border-gray-200 min-h-screen sticky top-0 overflow-y-auto">
-        <div className="p-4">
-          {/* User Profile Card */}
-          <div className="bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl p-4 mb-4 text-white shadow-lg">
-            <button 
-              onClick={() => navigate('/profile')}
-              className="w-full flex items-center gap-3 mb-3 hover:bg-white/10 rounded-xl p-1 -m-1 transition-colors"
-            >
-              <div className="relative">
-                <div className="w-14 h-14 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-white text-2xl font-bold border-2 border-white/30">
-                  {user.name.charAt(0)}
-                </div>
-                {/* Verified badge option */}
-                <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center border-2 border-white">
-                  <BadgeCheck size={12} />
-                </div>
-              </div>
-              <div className="flex-1 min-w-0 text-left">
-                <h3 className="font-bold text-white truncate text-sm">{user.name}</h3>
-                <p className="text-xs text-white/80 truncate">{user.email}</p>
-              </div>
-            </button>
-            {/* Get Verified Button */}
-            <button className="w-full bg-white/20 hover:bg-white/30 backdrop-blur-sm border border-white/30 text-white py-2 px-3 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-2">
-              <Shield size={14} />
-              <span>Get Verified Badge</span>
-            </button>
-          </div>
-
-          {/* Menu Sections */}
-          <div className="space-y-4">
-            {menuSections.map((section, sectionIndex) => (
-              <div key={sectionIndex}>
-                {section.title && (
-                  <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider px-3 mb-2">
-                    {section.title}
-                  </h4>
-                )}
-                <nav className="space-y-1">
-                  {section.items.map((item) => {
-                    const Icon = item.icon;
-                    const isActive = activeTab === item.id;
-                    return (
-                      <button
-                        key={item.id}
-                        onClick={() => handleMenuClick(item.id)}
-                        className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all text-sm ${
-                          isActive
-                            ? 'bg-blue-600 text-white shadow-md'
-                            : 'text-gray-700 hover:bg-gray-100'
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <Icon size={18} />
-                          <span className="font-semibold">{item.label}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {item.count !== undefined && item.count > 0 && (
-                            <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
-                              isActive ? 'bg-white/20' : 'bg-blue-100 text-blue-600'
-                            }`}>
-                              {item.count}
-                            </span>
-                          )}
-                          <ChevronRight size={14} className={isActive ? 'opacity-100' : 'opacity-0'} />
-                        </div>
-                      </button>
-                    );
-                  })}
-                </nav>
-              </div>
-            ))}
-          </div>
-        </div>
-      </aside>
-
-      {/* Mobile Sidebar */}
-      {sidebarOpen && (
-        <div className="md:hidden fixed inset-0 z-50">
-          {/* Backdrop */}
-          <div 
-            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-            onClick={() => setSidebarOpen(false)}
-          ></div>
-          
-          {/* Sidebar Content */}
-          <aside className="absolute left-0 top-0 bottom-0 w-[85%] max-w-sm bg-white shadow-2xl overflow-y-auto">
-            <div className="p-3">
-              {/* Close Button */}
-              <button
-                onClick={() => setSidebarOpen(false)}
-                className="mb-3 p-2 hover:bg-gray-100 rounded-lg transition-colors ml-auto block"
-              >
-                <X size={20} />
-              </button>
-
-              {/* User Profile Card - Mobile */}
-              <div className="bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl p-3 mb-3 text-white shadow-lg">
-                <button 
-                  onClick={() => {
-                    setSidebarOpen(false);
-                    navigate('/profile');
-                  }}
-                  className="w-full flex items-center gap-2 mb-2 hover:bg-white/10 rounded-lg p-1 -m-1 transition-colors"
-                >
-                  <div className="relative">
-                    <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-white text-lg font-bold border-2 border-white/30">
-                      {user.name.charAt(0)}
-                    </div>
-                    <button className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-green-500 rounded-full flex items-center justify-center border-2 border-white">
-                      <BadgeCheck size={10} />
-                    </button>
-                  </div>
-                  <div className="flex-1 min-w-0 text-left">
-                    <h3 className="font-bold text-white truncate text-xs">{user.name}</h3>
-                    <p className="text-[10px] text-white/80 truncate">{user.email}</p>
-                  </div>
-                </button>
-                <button className="w-full bg-white/20 hover:bg-white/30 backdrop-blur-sm border border-white/30 text-white py-1.5 px-2 rounded-lg text-[10px] font-semibold transition-all flex items-center justify-center gap-1.5">
-                  <Shield size={12} />
-                  <span>Get Verified Badge</span>
-                </button>
-              </div>
-
-              {/* Menu Sections - Mobile */}
-              <div className="space-y-3">
-                {menuSections.map((section, sectionIndex) => (
-                  <div key={sectionIndex}>
-                    {section.title && (
-                      <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-wider px-2 mb-1.5">
-                        {section.title}
-                      </h4>
-                    )}
-                    <nav className="space-y-0.5">
-                      {section.items.map((item) => {
-                        const Icon = item.icon;
-                        const isActive = activeTab === item.id;
-                        return (
-                          <button
-                            key={item.id}
-                            onClick={() => handleMenuClick(item.id)}
-                            className={`w-full flex items-center justify-between px-2.5 py-2 rounded-lg transition-all text-xs ${
-                              isActive
-                                ? 'bg-blue-600 text-white shadow-md'
-                                : 'text-gray-700 hover:bg-gray-100'
-                            }`}
-                          >
-                            <div className="flex items-center gap-2">
-                              <Icon size={16} />
-                              <span className="font-semibold">{item.label}</span>
-                            </div>
-                            <div className="flex items-center gap-1.5">
-                              {item.count !== undefined && item.count > 0 && (
-                                <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
-                                  isActive ? 'bg-white/20' : 'bg-blue-100 text-blue-600'
-                                }`}>
-                                  {item.count}
-                                </span>
-                              )}
-                              <ChevronRight size={12} className={isActive ? 'opacity-100' : 'opacity-0'} />
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </nav>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </aside>
-        </div>
-      )}
-
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto">
-        {/* Mobile Header */}
-        <div className="md:hidden sticky top-0 z-40 bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
-          <button
-            onClick={() => setSidebarOpen(true)}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-          >
-            <Menu size={22} />
-          </button>
-          <h1 className="text-lg font-bold text-gray-900">
-            {activeTab === 'profile-menu' 
-              ? 'Account' 
-              : menuSections.flatMap(s => s.items).find(i => i.id === activeTab)?.label || 'Dashboard'
-            }
-          </h1>
-          <div className="w-10"></div>
-        </div>
+      <main className="w-full overflow-y-auto">
 
         <div className="p-4 md:p-6">
           {/* My Rentals Tab */}
@@ -467,62 +573,115 @@ const Dashboard = () => {
                           {listing.status?.toUpperCase() || 'UNKNOWN'}
                         </div>
                         <div className="relative">
-                          {listing.images && listing.images.length > 0 ? (
-                            <ImageCarousel images={listing.images.map(img => img.url)} />
+                            {listing.images && listing.images.length > 0 ? (
+                              <ImageCarousel images={listing.images.map(img => img.url)} />
+                            ) : (
+                              <div className="h-32 w-full bg-gray-200 flex items-center justify-center">
+                                <Package size={32} className="text-gray-400" />
+                              </div>
+                            )}
+                        </div>
+                        <div className="p-3">
+                          {editingListing === listing._id ? (
+                            <div className="space-y-2">
+                              <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">Description</label>
+                                <textarea
+                                  value={editForm.description}
+                                  onChange={(e) => setEditForm(prev => ({ ...prev, description: e.target.value }))}
+                                  className="w-full p-2 border border-gray-300 rounded-md text-xs focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                  rows="2"
+                                  placeholder="Enter description"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">Amount</label>
+                                <input
+                                  type="number"
+                                  value={editForm.amount}
+                                  onChange={(e) => setEditForm(prev => ({ ...prev, amount: e.target.value }))}
+                                  className="w-full p-2 border border-gray-300 rounded-md text-xs focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                  placeholder="Enter amount"
+                                />
+                              </div>
+                              <div className="flex gap-1">
+                                <Button
+                                  onClick={() => handleSaveEdit(listing._id)}
+                                  className="flex-1 text-xs py-1.5 bg-green-600 hover:bg-green-700 text-white"
+                                >
+                                  <Save size={12} className="mr-1" />
+                                  Save
+                                </Button>
+                                <Button
+                                  onClick={handleCancelEdit}
+                                  variant="outline"
+                                  className="flex-1 text-xs py-1.5"
+                                >
+                                  Cancel
+                                </Button>
+                              </div>
+                            </div>
                           ) : (
-                            <div className="h-48 w-full bg-gray-200 flex items-center justify-center">
-                              <Package size={48} className="text-gray-400" />
+                            <>
+                              <h3 className="font-bold text-gray-900 mb-1 line-clamp-1 text-sm md:text-base">{listing.title}</h3>
+                              <div className="flex items-center justify-between mb-2">
+                                <span className="text-lg md:text-xl font-bold text-blue-600">
+                                  ₹{listing.price?.amount || 0}/{listing.price?.period || 'day'}
+                                </span>
+                                <div className="flex items-center gap-1 text-gray-600">
+                                  <MapPin size={14} />
+                                  <span className="text-xs">
+                                    {listing.location?.address || 
+                                     (listing.location?.city && 
+                                      listing.location.city !== 'Unknown' && 
+                                      listing.location.city !== 'Not specified' && 
+                                      listing.location.city.trim() !== '' &&
+                                      listing.location.city.length > 2 ? 
+                                      listing.location.city : 'Location not specified')}
+                                  </span>
+                                </div>
+                              </div>
+                            </>
+                          )}
+                          {editingListing !== listing._id && (
+                            <div className="flex gap-1">
+                              <Button 
+                                variant="outline" 
+                                className="flex-1 text-xs py-1.5"
+                                onClick={() => {
+                                  console.log('Navigating to rental with ID:', listing._id);
+                                  console.log('Full listing object:', listing);
+                                  navigate(`/rental/${listing._id}`);
+                                }}
+                              >
+                                <Eye size={12} className="mr-1" />
+                                View
+                              </Button>
+                              <Button 
+                                variant="outline" 
+                                className="flex-1 text-xs py-1.5"
+                                onClick={() => handleEditListing(listing)}
+                              >
+                                <Edit size={12} className="mr-1" />
+                                Edit
+                              </Button>
+                              <Button 
+                                variant="outline" 
+                                className="flex-1 text-xs py-1.5"
+                                onClick={() => handleBoostProduct(listing)}
+                              >
+                                <Rocket size={12} className="mr-1" />
+                                Boost
+                              </Button>
+                              <Button 
+                                variant="outline" 
+                                className="text-red-600 hover:bg-red-50 text-xs py-1.5 px-2"
+                                onClick={() => handleDeleteAd(listing._id)}
+                              >
+                                <Trash2 size={12} />
+                              </Button>
                             </div>
                           )}
-                        </div>
-                        <div className="p-4">
-                          <h3 className="font-bold text-gray-900 mb-2 line-clamp-1 text-sm md:text-base">{listing.title}</h3>
-                          <div className="flex items-center justify-between mb-3">
-                            <span className="text-lg md:text-xl font-bold text-blue-600">
-                              ₹{listing.price?.amount || 0}/{listing.price?.period || 'day'}
-                            </span>
-                            <div className="flex items-center gap-1 text-gray-600">
-                              <MapPin size={14} />
-                              <span className="text-xs">
-                                {listing.location?.address || 
-                                 (listing.location?.city && 
-                                  listing.location.city !== 'Unknown' && 
-                                  listing.location.city !== 'Not specified' && 
-                                  listing.location.city.trim() !== '' &&
-                                  listing.location.city.length > 2 ? 
-                                  listing.location.city : 'Location not specified')}
-                              </span>
-                            </div>
-                          </div>
-                          <div className="flex gap-2">
-                            <Button 
-                              variant="outline" 
-                              className="flex-1 text-xs md:text-sm py-2"
-                              onClick={() => {
-                                console.log('Navigating to rental with ID:', listing._id);
-                                console.log('Full listing object:', listing);
-                                navigate(`/rental/${listing._id}`);
-                              }}
-                            >
-                              <Eye size={14} className="mr-1" />
-                              View
-                            </Button>
-                            <Button 
-                              variant="outline" 
-                              className="flex-1 text-xs md:text-sm py-2"
-                              onClick={() => handleBoostProduct(item)}
-                            >
-                              <Rocket size={14} className="mr-1" />
-                              Boost
-                            </Button>
-                            <Button 
-                              variant="outline" 
-                              className="text-red-600 hover:bg-red-50 text-xs md:text-sm py-2 px-3"
-                              onClick={() => handleDeleteAd(item.id)}
-                            >
-                              <Trash2 size={14} />
-                            </Button>
-                          </div>
                         </div>
                       </Card>
                     );
@@ -594,42 +753,241 @@ const Dashboard = () => {
             </div>
           )}
 
-          {/* Favorites Tab */}
-          {activeTab === 'favorites' && (
+          {/* Profile Tab */}
+          {activeTab === 'profile' && (
             <div>
-              <div className="mb-6">
-                <h2 className="text-xl md:text-2xl font-bold text-gray-900">Favourites</h2>
-                <p className="text-sm text-gray-600">Items you've saved</p>
+              <div className="mb-6 flex items-center justify-between">
+                <div className="flex-1">
+                  <button 
+                    onClick={() => navigate(-1)}
+                    className="flex items-center justify-center w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
+                  >
+                    <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
+                  </button>
+                </div>
+                <div className="flex-1 text-center">
+                  <h2 className="text-xl md:text-2xl font-bold text-gray-900">Profile</h2>
+                </div>
+                <div className="flex-1"></div>
               </div>
 
-              {favoriteItems.length === 0 ? (
-                <Card className="p-8 md:p-12 text-center">
-                  <Heart size={48} className="mx-auto mb-4 text-gray-400" />
-                  <h3 className="text-lg md:text-xl font-bold mb-2">No favorites yet</h3>
-                  <p className="text-sm text-gray-600 mb-6">Start adding items to your favorites</p>
-                  <Button onClick={() => navigate('/')}>Browse Items</Button>
-                </Card>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {favoriteItems.map((item) => (
-                    <Card key={item.id} className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate(`/item/${item.id}`)}>
-                      <div className="relative">
-                        <ImageCarousel images={item.images} />
-                      </div>
-                      <div className="p-4">
-                        <h3 className="font-bold text-gray-900 mb-2 line-clamp-1 text-sm md:text-base">{item.title}</h3>
-                        <div className="flex items-center justify-between">
-                          <span className="text-lg md:text-xl font-bold text-blue-600">₹{item.price}/mo</span>
-                          <div className="flex items-center gap-1 text-gray-600 text-xs">
-                            <MapPin size={12} />
-                            <span>{item.location}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </Card>
-                  ))}
+
+              <Card className="p-6">
+                <div className="flex items-center gap-4 mb-6">
+                  <div className="relative">
+                    {(localProfileImage || user.profileImage || user.profile?.image || user.image) ? (
+                      <img 
+                        src={localProfileImage || user.profileImage || user.profile?.image || user.image} 
+                        alt="Profile" 
+                        className="w-20 h-20 rounded-full object-cover"
+                        onError={(e) => {
+                          console.log('Profile image failed to load, showing initial');
+                          e.target.style.display = 'none';
+                          e.target.nextSibling.style.display = 'flex';
+                        }}
+                      />
+                    ) : null}
+                    <div 
+                      className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 text-2xl font-bold"
+                      style={{ display: (localProfileImage || user.profileImage || user.profile?.image || user.image) ? 'none' : 'flex' }}
+                    >
+                      {user.name.charAt(0)}
+                    </div>
+                    <button className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center border-2 border-white">
+                      <BadgeCheck size={14} className="text-white" />
+                    </button>
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-lg font-bold text-gray-900">{user.name}</h3>
+                    <p className="text-sm text-gray-600">{user.email}</p>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files[0];
+                        if (file) {
+                          handleImageUpload(file, 'profile');
+                        }
+                      }}
+                      className="mt-2 text-xs text-blue-600 hover:text-blue-800 cursor-pointer"
+                      disabled={uploadingImage}
+                    />
+                    {uploadingImage && <p className="text-xs text-gray-500">Uploading...</p>}
+                  </div>
                 </div>
-              )}
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
+                    <input
+                      type="text"
+                      value={user.name || ''}
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      readOnly
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
+                    <input
+                      type="email"
+                      value={user.email || ''}
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      readOnly
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
+                    <input
+                      type="tel"
+                      value={user.phone || ''}
+                      placeholder="Add your phone number"
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      readOnly
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Street Address</label>
+                    <textarea
+                      value={profileForm.street}
+                      onChange={(e) => setProfileForm(prev => ({ ...prev, street: e.target.value }))}
+                      placeholder="Add your street address"
+                      rows="2"
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">City</label>
+                      <input
+                        type="text"
+                        value={profileForm.city}
+                        onChange={(e) => setProfileForm(prev => ({ ...prev, city: e.target.value }))}
+                        placeholder="Add your city"
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">State</label>
+                      <input
+                        type="text"
+                        value={profileForm.state}
+                        onChange={(e) => setProfileForm(prev => ({ ...prev, state: e.target.value }))}
+                        placeholder="Add your state"
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Pincode</label>
+                      <input
+                        type="text"
+                        value={profileForm.pincode}
+                        onChange={(e) => setProfileForm(prev => ({ ...prev, pincode: e.target.value }))}
+                        placeholder="Add your pincode"
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Landmark</label>
+                      <input
+                        type="text"
+                        value={profileForm.landmark}
+                        onChange={(e) => setProfileForm(prev => ({ ...prev, landmark: e.target.value }))}
+                        placeholder="Add nearby landmark"
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+                  </div>
+                  
+                  {/* Aadhar Card Images */}
+                  <div className="border-t pt-4">
+                    <h4 className="text-lg font-semibold text-gray-900 mb-4">Aadhar Card Documents</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Aadhar Card Front</label>
+                        {user.rentalProfile?.documents?.aadhar?.frontImage?.url ? (
+                          <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
+                            <img 
+                              src={user.rentalProfile.documents.aadhar.frontImage.url} 
+                              alt="Aadhar Card Front" 
+                              className="w-full h-40 object-contain rounded-lg bg-gray-50"
+                              onError={(e) => {
+                                e.target.style.display = 'none';
+                                e.target.nextSibling.style.display = 'block';
+                              }}
+                            />
+                            <div className="hidden text-center p-4">
+                              <p className="text-gray-500">Failed to load Aadhar Front image</p>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+                            <div className="w-16 h-16 mx-auto mb-2 bg-gray-100 rounded-full flex items-center justify-center">
+                              <FileText size={24} className="text-gray-400" />
+                            </div>
+                            <p className="text-gray-500">No Aadhar Front image uploaded</p>
+                          </div>
+                        )}
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Aadhar Card Back</label>
+                        {user.rentalProfile?.documents?.aadhar?.backImage?.url ? (
+                          <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
+                            <img 
+                              src={user.rentalProfile.documents.aadhar.backImage.url} 
+                              alt="Aadhar Card Back" 
+                              className="w-full h-40 object-contain rounded-lg bg-gray-50"
+                              onError={(e) => {
+                                e.target.style.display = 'none';
+                                e.target.nextSibling.style.display = 'block';
+                              }}
+                            />
+                            <div className="hidden text-center p-4">
+                              <p className="text-gray-500">Failed to load Aadhar Back image</p>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+                            <div className="w-16 h-16 mx-auto mb-2 bg-gray-100 rounded-full flex items-center justify-center">
+                              <FileText size={24} className="text-gray-400" />
+                            </div>
+                            <p className="text-gray-500">No Aadhar Back image uploaded</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-6 flex gap-3">
+                  <Button 
+                    onClick={handleSaveProfile}
+                    disabled={savingProfile}
+                    className="flex-1"
+                  >
+                    {savingProfile ? 'Saving...' : 'Save Changes'}
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="flex-1"
+                    onClick={() => {
+                      // Reset form to original values
+                      setProfileForm({
+                        street: user.address?.street || '',
+                        city: user.address?.city || '',
+                        state: user.address?.state || '',
+                        pincode: user.address?.pincode || '',
+                        landmark: user.address?.landmark || ''
+                      });
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </Card>
             </div>
           )}
 
@@ -640,7 +998,22 @@ const Dashboard = () => {
               <div className="bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl p-4 mb-4 text-white shadow-lg">
                 <div className="flex items-center gap-3 mb-3">
                   <div className="relative">
-                    <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-white text-2xl font-bold border-2 border-white/30">
+                    {(localProfileImage || user.profileImage || user.profile?.image || user.image) ? (
+                      <img 
+                        src={localProfileImage || user.profileImage || user.profile?.image || user.image} 
+                        alt="Profile" 
+                        className="w-16 h-16 rounded-full object-cover border-2 border-white/30"
+                        onError={(e) => {
+                          console.log('Profile image failed to load, showing initial');
+                          e.target.style.display = 'none';
+                          e.target.nextSibling.style.display = 'flex';
+                        }}
+                      />
+                    ) : null}
+                    <div 
+                      className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-white text-2xl font-bold border-2 border-white/30"
+                      style={{ display: (localProfileImage || user.profileImage || user.profile?.image || user.image) ? 'none' : 'flex' }}
+                    >
                       {user.name.charAt(0)}
                     </div>
                     {/* Verified badge option */}
@@ -650,14 +1023,9 @@ const Dashboard = () => {
                   </div>
                   <div className="flex-1 min-w-0">
                     <h3 className="font-bold text-white truncate text-base">{user.name}</h3>
-                    <p className="text-xs text-white/80 truncate">{user.email}</p>
+                    <p className="text-xs text-white/80 truncate">{user.phone || user.email}</p>
                   </div>
                 </div>
-                {/* Get Verified Button */}
-                <button className="w-full bg-white/20 hover:bg-white/30 backdrop-blur-sm border border-white/30 text-white py-2.5 px-3 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2">
-                  <Shield size={16} />
-                  <span>Get Verified Badge</span>
-                </button>
               </div>
 
               {/* Menu Sections */}
@@ -721,7 +1089,7 @@ const Dashboard = () => {
           )}
 
           {/* Other Tabs - Placeholder */}
-          {!['my-ads', 'bookings', 'favorites', 'profile-menu'].includes(activeTab) && (
+          {!['my-ads', 'bookings', 'profile', 'profile-menu'].includes(activeTab) && (
             <Card className="p-8 md:p-12 text-center">
               <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
                 {menuSections.flatMap(s => s.items).find(i => i.id === activeTab)?.icon && 

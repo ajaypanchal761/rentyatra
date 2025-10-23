@@ -5,7 +5,8 @@ const {
   getPublicRentalRequest,
   getFeaturedRentalRequests,
   createRentalRequest,
-  getUserRentalRequests
+  getUserRentalRequests,
+  updateRentalRequest
 } = require('../controllers/publicRentalRequestController');
 
 const { protect } = require('../middleware/auth');
@@ -37,6 +38,11 @@ router.get('/featured', getFeaturedRentalRequests);
 // @desc    Get user's own rental requests
 // @access  Private (User)
 router.get('/my-requests', protect, getUserRentalRequests);
+
+// @route   PUT /api/rental-requests/:id
+// @desc    Update user's own rental request
+// @access  Private (User)
+router.put('/:id', protect, updateRentalRequest);
 
 // @route   GET /api/rental-requests/:id
 // @desc    Get single public rental request

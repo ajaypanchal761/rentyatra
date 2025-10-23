@@ -577,10 +577,110 @@ const getUserRentalRequests = async (req, res) => {
   }
 };
 
+// @desc    Update user's own rental request
+// @route   PUT /api/rental-requests/:id
+// @access  Private (User)
+const updateRentalRequest = async (req, res) => {
+  try {
+    console.log('=== Update Rental Request ===');
+    console.log('Request params:', req.params);
+    console.log('Request body:', req.body);
+    console.log('User info:', req.user);
+
+    const { id } = req.params;
+    const { description, priceAmount } = req.body;
+
+    // Validate required fields
+    if (!description && !priceAmount) {
+      return res.status(400).json({
+        success: false,
+        message: 'At least one field (description or priceAmount) is required to update'
+      });
+    }
+
+    // Find the rental request
+    const rentalRequest = await RentalRequest.findById(id);
+
+    if (!rentalRequest) {
+      return res.status(404).json({
+        success: false,
+        message: 'Rental request not found'
+      });
+    }
+
+    // Check if the user owns this rental request
+    console.log('Debug user ID comparison:', {
+      rentalRequestUserId: rentalRequest.user,
+      rentalRequestUserIdString: rentalRequest.user.toString(),
+      reqUserId: req.user.userId,
+      reqUserIdString: req.user.userId.toString(),
+      areEqual: rentalRequest.user.toString() === req.user.userId.toString()
+    });
+    
+    if (rentalRequest.user.toString() !== req.user.userId.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: 'You can only update your own rental requests'
+      });
+    }
+
+    // Check if the rental request is in a state that allows updates
+    if (rentalRequest.status === 'rejected') {
+      return res.status(400).json({
+        success: false,
+        message: 'Cannot update rejected rental requests'
+      });
+    }
+
+    // Update fields
+    const updateData = {};
+    
+    if (description !== undefined) {
+      updateData.description = description.trim();
+    }
+    
+    if (priceAmount !== undefined) {
+      updateData['price.amount'] = parseFloat(priceAmount);
+    }
+
+    // Update the rental request
+    const updatedRequest = await RentalRequest.findByIdAndUpdate(
+      id,
+      updateData,
+      { new: true, runValidators: true }
+    ).populate('category', 'name');
+
+    console.log('Rental request updated successfully:', updatedRequest._id);
+
+    res.status(200).json({
+      success: true,
+      message: 'Rental request updated successfully',
+      data: {
+        rentalRequest: updatedRequest
+      }
+    });
+
+  } catch (error) {
+    console.error('=== Error updating rental request ===');
+    console.error('Error details:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    });
+
+    res.status(500).json({
+      success: false,
+      message: 'Error updating rental request',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+    });
+  }
+};
+
 module.exports = {
   getPublicRentalRequests,
   getPublicRentalRequest,
   getFeaturedRentalRequests,
   createRentalRequest,
-  getUserRentalRequests
+  getUserRentalRequests,
+  updateRentalRequest
 };

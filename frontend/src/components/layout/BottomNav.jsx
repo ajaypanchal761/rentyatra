@@ -5,16 +5,25 @@ import { useAuth } from '../../contexts/AuthContext';
 const BottomNav = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, loading } = useAuth();
 
   const isActive = (path) => {
     if (path === '/') {
       return location.pathname === '/';
     }
+    if (path === '/dashboard/account') {
+      // Only highlight account if we're on the dashboard/account route
+      return location.pathname === '/dashboard/account';
+    }
     return location.pathname.startsWith(path);
   };
 
   const handleNavClick = (path) => {
+    // Don't navigate if still loading authentication
+    if (loading) {
+      return;
+    }
+    
     if ((path === '/post-ad' || path === '/dashboard' || path === '/dashboard/my-ads' || path === '/messages') && !isAuthenticated) {
       navigate('/login');
       return;
@@ -52,7 +61,8 @@ const BottomNav = () => {
       id: 'account',
       label: 'Account',
       icon: User,
-      path: isAuthenticated ? '/dashboard' : '/login',
+      path: loading ? '#' : (isAuthenticated ? '/dashboard/account' : '/login'),
+      disabled: loading,
     },
   ];
 
@@ -96,7 +106,10 @@ const BottomNav = () => {
             <button
               key={item.id}
               onClick={() => handleNavClick(item.path)}
-              className="flex flex-col items-center justify-center gap-1 py-2 px-3 transition-all active:scale-95"
+              disabled={item.disabled}
+              className={`flex flex-col items-center justify-center gap-1 py-2 px-3 transition-all ${
+                item.disabled ? 'opacity-50 cursor-not-allowed' : 'active:scale-95'
+              }`}
             >
               <Icon
                 size={20}
