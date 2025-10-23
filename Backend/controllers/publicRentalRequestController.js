@@ -31,7 +31,15 @@ const getPublicRentalRequests = async (req, res) => {
     }
     
     if (category) {
-      query.category = category;
+      // If category is provided, we need to find the category by name first
+      const Category = require('../models/Category');
+      const categoryDoc = await Category.findOne({ name: { $regex: category, $options: 'i' } });
+      if (categoryDoc) {
+        query.category = categoryDoc._id;
+      } else {
+        // If category not found, return empty results
+        query.category = null;
+      }
     }
     
     if (city) {

@@ -1672,6 +1672,159 @@ class ApiService {
     }
   }
 
+  // Review APIs
+  async getProductReviews(productId, options = {}) {
+    const params = new URLSearchParams();
+    if (options.page) params.append('page', options.page);
+    if (options.limit) params.append('limit', options.limit);
+    if (options.sortBy) params.append('sortBy', options.sortBy);
+    if (options.sortOrder) params.append('sortOrder', options.sortOrder);
+    if (options.rating) params.append('rating', options.rating);
+
+    const url = `${this.baseURL}/reviews/product/${productId}?${params.toString()}`;
+    const config = {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    };
+
+    try {
+      const response = await fetch(url, config);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Something went wrong');
+      }
+
+      return data;
+    } catch (error) {
+      console.error('API Request Error:', error);
+      throw error;
+    }
+  }
+
+  async getRentalRequestReviews(rentalRequestId, options = {}) {
+    const params = new URLSearchParams();
+    if (options.page) params.append('page', options.page);
+    if (options.limit) params.append('limit', options.limit);
+    if (options.sortBy) params.append('sortBy', options.sortBy);
+    if (options.sortOrder) params.append('sortOrder', options.sortOrder);
+    if (options.rating) params.append('rating', options.rating);
+
+    const url = `${this.baseURL}/reviews/rental-request/${rentalRequestId}?${params.toString()}`;
+    const config = {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    };
+
+    try {
+      const response = await fetch(url, config);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Something went wrong');
+      }
+
+      return data;
+    } catch (error) {
+      console.error('API Request Error:', error);
+      throw error;
+    }
+  }
+
+  async createProductReview(productId, reviewData) {
+    return this.request(`/reviews/product/${productId}`, {
+      method: 'POST',
+      body: JSON.stringify(reviewData),
+    });
+  }
+
+  async createRentalRequestReview(rentalRequestId, reviewData) {
+    return this.request(`/reviews/rental-request/${rentalRequestId}`, {
+      method: 'POST',
+      body: JSON.stringify(reviewData),
+    });
+  }
+
+  async updateReview(reviewId, reviewData) {
+    return this.request(`/reviews/${reviewId}`, {
+      method: 'PUT',
+      body: JSON.stringify(reviewData),
+    });
+  }
+
+  async deleteReview(reviewId) {
+    return this.request(`/reviews/${reviewId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async voteReview(reviewId, isHelpful) {
+    return this.request(`/reviews/${reviewId}/vote`, {
+      method: 'POST',
+      body: JSON.stringify({ isHelpful }),
+    });
+  }
+
+  async removeVote(reviewId) {
+    return this.request(`/reviews/${reviewId}/vote`, {
+      method: 'DELETE',
+    });
+  }
+
+  async getUserReviews(userId, options = {}) {
+    const params = new URLSearchParams();
+    if (options.page) params.append('page', options.page);
+    if (options.limit) params.append('limit', options.limit);
+    if (options.sortBy) params.append('sortBy', options.sortBy);
+    if (options.sortOrder) params.append('sortOrder', options.sortOrder);
+
+    const url = `${this.baseURL}/reviews/user/${userId}?${params.toString()}`;
+    const config = {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    };
+
+    try {
+      const response = await fetch(url, config);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Something went wrong');
+      }
+
+      return data;
+    } catch (error) {
+      console.error('API Request Error:', error);
+      throw error;
+    }
+  }
+
+  async getProductReviewStats(productId) {
+    const url = `${this.baseURL}/reviews/product/${productId}/stats`;
+    const config = {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    };
+
+    try {
+      const response = await fetch(url, config);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Something went wrong');
+      }
+
+      return data;
+    } catch (error) {
+      console.error('API Request Error:', error);
+      throw error;
+    }
+  }
+
   // Health check
   async healthCheck() {
     return this.request('/health');

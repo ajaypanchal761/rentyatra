@@ -84,6 +84,8 @@ function AppContent() {
           <Route path="/listings" element={<Listings />} />
           <Route path="/category" element={<CategoryDetail />} />
           <Route path="/category/:categorySlug" element={<CategoryDetail />} />
+          <Route path="/category/:categorySlug/rentals" element={<CategoryDetail />} />
+          <Route path="/rental/:id" element={<ItemDetail />} />
           <Route path="/item/:id" element={<ItemDetail />} />
           
           {/* Authentication Routes */}

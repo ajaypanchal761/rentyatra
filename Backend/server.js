@@ -28,6 +28,7 @@ const publicCategoryRoutes = require('./routes/publicCategoryRoutes');
 const publicRentalRequestRoutes = require('./routes/publicRentalRequestRoutes');
 const bannerRoutes = require('./routes/bannerRoutes');
 const rentalRequestRoutes = require('./routes/rentalRequestRoutes');
+const reviewRoutes = require('./routes/reviewRoutes');
 
 const app = express();
 
@@ -87,6 +88,7 @@ app.use('/api/admin/rental-requests', rentalRequestRoutes);
 app.use('/api/products', publicProductRoutes);
 app.use('/api/categories', publicCategoryRoutes);
 app.use('/api/rental-requests', publicRentalRequestRoutes);
+app.use('/api/reviews', reviewRoutes);
 
 // Health check route
 app.get('/api/health', (req, res) => {
@@ -151,6 +153,7 @@ const startServer = async () => {
 🛍️ Public Product Endpoints: /api/products
 📂 Public Category Endpoints: /api/categories
 🏠 Public Rental Request Endpoints: /api/rental-requests (GET, POST)
+⭐ Review Endpoints: /api/reviews
       `);
     });
     

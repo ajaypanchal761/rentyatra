@@ -22,6 +22,7 @@ const ItemDetail = () => {
   const [rentalRequest, setRentalRequest] = useState(null);
   const [loading, setLoading] = useState(false);
   const [isRentalRequest, setIsRentalRequest] = useState(false);
+  const [error, setError] = useState(null);
   
   // Create media array (video + images)
   const getMediaArray = (currentItem) => {
@@ -102,7 +103,9 @@ const ItemDetail = () => {
   useEffect(() => {
     const fetchRentalRequest = async () => {
       if (!item && id) {
+        console.log('No regular item found, trying to fetch rental request with ID:', id);
         setLoading(true);
+        setError(null);
         try {
           const response = await apiService.getPublicRentalRequest(id);
           if (response.success) {
@@ -111,6 +114,16 @@ const ItemDetail = () => {
           }
         } catch (error) {
           console.error('Error fetching rental request:', error);
+          console.error('ID that failed:', id);
+          
+          // Check if this might be a product ID instead of rental request ID
+          if (error.message.includes('not found') && id) {
+            console.log('This might be a product ID. Attempting to find rental request by product ID...');
+            // TODO: Implement search by product ID if needed
+            setError('Item not found. The rental request may have been removed or is not available.');
+          } else {
+            setError('Item not found. The rental request may have been removed or is not available.');
+          }
         } finally {
           setLoading(false);
         }
@@ -140,12 +153,20 @@ const ItemDetail = () => {
   }
 
   // Show not found if neither item nor rental request found
-  if (!item && !rentalRequest) {
+  if (!item && !rentalRequest && !loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <Card className="p-8 text-center">
-          <h2 className="text-2xl font-bold mb-4">Item not found</h2>
-          <Button onClick={() => navigate('/listings')}>Browse Listings</Button>
+          <h2 className="text-2xl font-bold mb-4">
+            {error ? 'Item not available' : 'Item not found'}
+          </h2>
+          <p className="text-gray-600 mb-6">
+            {error || 'The item you are looking for does not exist or has been removed.'}
+          </p>
+          <div className="flex gap-4 justify-center">
+            <Button onClick={() => navigate('/listings')}>Browse Listings</Button>
+            <Button variant="outline" onClick={() => navigate('/')}>Go Home</Button>
+          </div>
         </Card>
       </div>
     );
@@ -423,9 +444,14 @@ const ItemDetail = () => {
         </div>
 
         {/* Reviews Section */}
-        <div className="mt-8 md:mt-12">
-          <ReviewsSection itemId={currentItem.id} />
-        </div>
+        {currentItem && currentItem.id && (
+          <div className="mt-8 md:mt-12">
+            <ReviewsSection 
+              itemId={currentItem.id} 
+              isRentalRequest={currentItem.isRentalRequest || false}
+            />
+          </div>
+        )}
 
         {/* Related Products Section */}
         {relatedProducts.length > 0 && (

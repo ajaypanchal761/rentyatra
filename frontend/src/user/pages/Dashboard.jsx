@@ -77,6 +77,7 @@ const Dashboard = () => {
     try {
       const response = await apiService.getUserRentalListings();
       if (response.success) {
+        console.log('Rental listings data:', response.data.requests);
         setRentalListings(response.data.requests || []);
       }
     } catch (error) {
@@ -491,7 +492,11 @@ const Dashboard = () => {
                             <Button 
                               variant="outline" 
                               className="flex-1 text-xs md:text-sm py-2"
-                              onClick={() => navigate(`/rental/${listing._id}`)}
+                              onClick={() => {
+                                console.log('Navigating to rental with ID:', listing._id);
+                                console.log('Full listing object:', listing);
+                                navigate(`/rental/${listing._id}`);
+                              }}
                             >
                               <Eye size={14} className="mr-1" />
                               View

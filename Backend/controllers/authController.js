@@ -58,7 +58,7 @@ const sendOTP = async (req, res) => {
     let otp;
     
     // Check if it's the default test number
-    const isDefaultTestNumber = cleanPhone === '7610416911';
+    const isDefaultTestNumber = cleanPhone === '7610416911' || cleanPhone === '9617540664';
     
     if (isDefaultTestNumber) {
       // Use fixed OTP for development
@@ -411,7 +411,7 @@ const register = async (req, res) => {
     let otp;
     
     // Check if it's the default test number
-    const isDefaultTestNumber = cleanPhone === '7610416911';
+    const isDefaultTestNumber = cleanPhone === '7610416911' || cleanPhone === '9617540664';
     
     if (isDefaultTestNumber) {
       // Use fixed OTP for development
