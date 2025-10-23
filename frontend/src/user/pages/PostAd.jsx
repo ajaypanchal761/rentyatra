@@ -38,6 +38,8 @@ const PostAd = () => {
     pricePerDay: '',
     location: '',
     condition: 'good',
+    phone: '',
+    email: '',
   });
 
   const [images, setImages] = useState([]);
@@ -317,14 +319,30 @@ const PostAd = () => {
     console.log('Video:', video);
     console.log('Selected product:', selectedProduct);
     console.log('Selected category:', selectedCategory);
+    console.log('Selected category ID:', selectedCategory?.id);
+    console.log('Selected category _id:', selectedCategory?._id);
 
-    if (!formData.title || !formData.description || !formData.location) {
+    if (!formData.title || !formData.description || !formData.location || !formData.phone || !formData.email) {
       setError('Please fill in all required fields');
       return;
     }
 
     if (!formData.pricePerDay) {
       setError('Please specify rental price per day');
+      return;
+    }
+
+    // Validate phone number
+    const phoneRegex = /^[6-9]\d{9}$/;
+    if (!phoneRegex.test(formData.phone)) {
+      setError('Please enter a valid 10-digit phone number');
+      return;
+    }
+
+    // Validate email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      setError('Please enter a valid email address');
       return;
     }
 
@@ -366,22 +384,37 @@ const PostAd = () => {
       // Add text fields (matching backend API expectations)
       formDataToSend.append('title', formData.title);
       formDataToSend.append('description', formData.description);
-      formDataToSend.append('priceAmount', formData.pricePerDay);
+      formDataToSend.append('priceAmount', parseFloat(formData.pricePerDay));
       formDataToSend.append('pricePeriod', 'daily');
-      formDataToSend.append('product', selectedProduct.id);
+      formDataToSend.append('product', selectedProduct._id);
       formDataToSend.append('category', selectedCategory.id);
+      
+      // Location data - send as nested structure as expected by backend
       formDataToSend.append('location', formData.location);
       formDataToSend.append('address', formData.location);
-      formDataToSend.append('city', 'Unknown'); // You can add city input field later
-      formDataToSend.append('state', 'Unknown'); // You can add state input field later
+      
+      // Extract city and state from location string
+      const locationParts = formData.location.split(',');
+      const city = locationParts[0]?.trim() || 'Not specified';
+      const state = locationParts[1]?.trim() || 'Not specified';
+      
+      formDataToSend.append('city', city);
+      formDataToSend.append('state', state);
       formDataToSend.append('pincode', '000000'); // You can add pincode input field later
-      formDataToSend.append('phone', user?.phone || '');
-      formDataToSend.append('email', user?.email || '');
+      
+      formDataToSend.append('phone', formData.phone);
+      formDataToSend.append('email', formData.email);
       formDataToSend.append('features', JSON.stringify(['Good condition', 'Well maintained'])); // Default features
       formDataToSend.append('tags', JSON.stringify([selectedProduct.name, selectedCategory.name])); // Default tags
       
       if (coordinates) {
         formDataToSend.append('coordinates', JSON.stringify(coordinates));
+      }
+
+      // Debug: Log all form data being sent
+      console.log('FormData being sent:');
+      for (let [key, value] of formDataToSend.entries()) {
+        console.log(`${key}:`, value);
       }
 
       // Add images (convert base64 to files)
@@ -435,7 +468,10 @@ const PostAd = () => {
       } else {
         // Handle validation errors
         if (response.errors) {
-          const errorMessages = Object.values(response.errors).join(', ');
+          console.error('Validation errors:', response.errors);
+          const errorMessages = Object.values(response.errors).map(error => 
+            typeof error === 'object' ? error.message : error
+          ).join(', ');
           setError(`Validation failed: ${errorMessages}`);
         } else {
           setError(response.message || 'Failed to submit rental listing');
@@ -443,7 +479,22 @@ const PostAd = () => {
       }
     } catch (error) {
       console.error('Error submitting rental listing:', error);
-      setError(error.response?.data?.message || 'Failed to submit rental listing. Please try again.');
+      console.error('Error details:', {
+        message: error.message,
+        response: error.response,
+        data: error.response?.data
+      });
+      
+      // Try to get more specific error information
+      if (error.response?.data?.errors) {
+        console.error('Validation errors from server:', error.response.data.errors);
+        const errorMessages = Object.values(error.response.data.errors).map(error => 
+          typeof error === 'object' ? error.message : error
+        ).join(', ');
+        setError(`Validation failed: ${errorMessages}`);
+      } else {
+        setError(error.response?.data?.message || error.message || 'Failed to submit rental listing. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -788,6 +839,41 @@ const PostAd = () => {
                     </div>
                   </div>
                 )}
+              </div>
+
+              {/* Contact Information */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                {/* Phone */}
+                <div>
+                  <label className="block text-xs md:text-sm font-bold text-gray-700 mb-1.5 md:mb-2">
+                    Phone Number *
+                  </label>
+                  <input
+                    type="tel"
+                    name="phone"
+                    value={formData.phone}
+                    onChange={handleChange}
+                    placeholder="9876543210"
+                    className="w-full px-3 md:px-4 py-2 md:py-3 text-sm md:text-base border-2 border-gray-200 rounded-lg md:rounded-xl focus:ring-2 md:focus:ring-4 focus:ring-blue-200 focus:border-blue-500 outline-none transition-all"
+                    required
+                  />
+                </div>
+
+                {/* Email */}
+                <div>
+                  <label className="block text-xs md:text-sm font-bold text-gray-700 mb-1.5 md:mb-2">
+                    Email Address *
+                  </label>
+                  <input
+                    type="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    placeholder="your@email.com"
+                    className="w-full px-3 md:px-4 py-2 md:py-3 text-sm md:text-base border-2 border-gray-200 rounded-lg md:rounded-xl focus:ring-2 md:focus:ring-4 focus:ring-blue-200 focus:border-blue-500 outline-none transition-all"
+                    required
+                  />
+                </div>
               </div>
 
               {/* Condition */}

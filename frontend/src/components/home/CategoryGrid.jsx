@@ -38,7 +38,7 @@ const CategoryGrid = () => {
   const handleProductClick = async (product) => {
     try {
       // Navigate to category page with product ID as query parameter
-      // This will allow the category page to automatically select this product
+      // This will allow the category page to automatically select this product and show its categories
       navigate(`/category?productId=${product._id}`);
     } catch (error) {
       console.error('Error navigating to product:', error);

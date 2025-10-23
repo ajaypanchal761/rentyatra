@@ -181,10 +181,6 @@ const BookingCard = ({ item }) => {
           <span>Instant booking confirmation</span>
         </div>
         <div className="flex items-start gap-2">
-          <Shield size={14} className="mt-0.5 flex-shrink-0 text-green-600" />
-          <span>Secure payment & damage protection</span>
-        </div>
-        <div className="flex items-start gap-2">
           <AlertCircle size={14} className="mt-0.5 flex-shrink-0 text-orange-600" />
           <span>Free cancellation up to 24 hours before</span>
         </div>

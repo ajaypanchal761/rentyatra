@@ -300,6 +300,36 @@ const CategoryManagementView = () => {
         }
     };
 
+    // Handle delete category
+    const handleDeleteCategory = async (category) => {
+        // Show confirmation dialog
+        const confirmed = window.confirm(
+            `Are you sure you want to delete the category "${category.name}"? This action cannot be undone.`
+        );
+
+        if (!confirmed) {
+            return;
+        }
+
+        setLoading(true);
+        setError('');
+
+        try {
+            console.log('Deleting category:', category._id);
+            await apiService.deleteCategory(category._id);
+            console.log('Category deleted successfully');
+
+            // Refresh categories list
+            await fetchCategories();
+            
+        } catch (err) {
+            console.error('Error deleting category:', err);
+            setError(err.message || 'Failed to delete category. Please try again.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <div className="space-y-6">
             {/* Header */}
@@ -411,7 +441,10 @@ const CategoryManagementView = () => {
                                                 >
                                                     Edit
                                                 </button>
-                                                <button className="text-red-600 hover:text-red-900">
+                                                <button 
+                                                    onClick={() => handleDeleteCategory(category)}
+                                                    className="text-red-600 hover:text-red-900"
+                                                >
                                                     Delete
                                                 </button>
                                             </td>

@@ -205,6 +205,36 @@ const ProductManagementView = () => {
         }
     };
 
+    // Handle delete product
+    const handleDeleteProduct = async (product) => {
+        // Show confirmation dialog
+        const confirmed = window.confirm(
+            `Are you sure you want to delete the product "${product.name}"? This action cannot be undone.`
+        );
+
+        if (!confirmed) {
+            return;
+        }
+
+        setLoading(true);
+        setError('');
+
+        try {
+            console.log('Deleting product:', product._id);
+            await apiService.deleteProduct(product._id);
+            console.log('Product deleted successfully');
+
+            // Refresh products list
+            await fetchProducts();
+            
+        } catch (err) {
+            console.error('Error deleting product:', err);
+            setError(err.message || 'Failed to delete product. Please try again.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <div className="space-y-6">
             {/* Header */}
@@ -315,7 +345,10 @@ const ProductManagementView = () => {
                                             >
                                                 Edit
                                             </button>
-                                            <button className="text-red-600 hover:text-red-900">
+                                            <button 
+                                                onClick={() => handleDeleteProduct(product)}
+                                                className="text-red-600 hover:text-red-900"
+                                            >
                                                 Delete
                                             </button>
                                         </td>

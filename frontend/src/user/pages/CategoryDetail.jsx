@@ -178,6 +178,12 @@ const CategoryDetail = () => {
             );
             console.log('Product subcategories:', productSubcategories);
             setSubcategories(productSubcategories);
+            
+            // Automatically navigate to categories view if productId is provided
+            if (productId) {
+              setNavigationLevel('categories');
+              console.log('Auto-navigating to categories view for product:', initialProduct.name);
+            }
           } else {
             console.log('No initial product found, showing all categories');
           }
@@ -600,7 +606,12 @@ const CategoryDetail = () => {
                               ₹{request.price?.amount || 0}/{request.price?.period || 'day'}
                             </span>
                             <span className="text-xs text-gray-500">
-                              {request.location?.city || 'Location'}
+                              {request.location?.city && 
+                               request.location.city !== 'Unknown' && 
+                               request.location.city !== 'Not specified' && 
+                               request.location.city.trim() !== '' &&
+                               request.location.city.length > 2 ? 
+                               request.location.city : 'Location'}
                             </span>
                           </div>
                         </div>

@@ -1,5 +1,6 @@
 const RentalRequest = require('../models/RentalRequest');
 const { cloudinary, deleteImage, extractPublicId } = require('../config/cloudinary');
+const mongoose = require('mongoose');
 
 // @desc    Get all public approved rental requests (for regular users)
 // @route   GET /api/rental-requests
@@ -171,6 +172,24 @@ const createRentalRequest = async (req, res) => {
     console.log('Request body:', req.body);
     console.log('Request files:', req.files);
     console.log('User info:', req.user);
+    
+    // Debug specific fields
+    console.log('Debug fields:', {
+      title: req.body.title,
+      description: req.body.description,
+      priceAmount: req.body.priceAmount,
+      pricePeriod: req.body.pricePeriod,
+      product: req.body.product,
+      category: req.body.category,
+      location: req.body.location,
+      address: req.body.address,
+      city: req.body.city,
+      state: req.body.state,
+      pincode: req.body.pincode,
+      phone: req.body.phone,
+      email: req.body.email,
+      userId: req.user?.userId
+    });
 
         const {
           title,
@@ -198,6 +217,21 @@ const createRentalRequest = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: 'Missing required fields'
+      });
+    }
+
+    // Validate ObjectIds
+    if (!mongoose.Types.ObjectId.isValid(product)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid product ID'
+      });
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(category)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid category ID'
       });
     }
 
@@ -340,8 +374,8 @@ const createRentalRequest = async (req, res) => {
       description: description.trim(),
       location: {
         address: address || location,
-        city: city || 'Unknown',
-        state: state || 'Unknown',
+        city: city || 'Not specified',
+        state: state || 'Not specified',
         pincode: pincode || '000000',
         coordinates: coordinates ? {
           latitude: coordinates.lat || coordinates.latitude,
@@ -385,7 +419,23 @@ const createRentalRequest = async (req, res) => {
     // Validate the document before saving
     const validationError = rentalRequest.validateSync();
     if (validationError) {
-      console.error('Validation error:', validationError);
+      console.error('Validation error details:', {
+        message: validationError.message,
+        errors: validationError.errors,
+        name: validationError.name
+      });
+      
+      // Log each validation error
+      for (const field in validationError.errors) {
+        const error = validationError.errors[field];
+        console.error(`Field ${field}:`, {
+          message: error.message,
+          value: error.value,
+          path: error.path,
+          kind: error.kind
+        });
+      }
+      
       return res.status(400).json({
         success: false,
         message: 'Validation failed',

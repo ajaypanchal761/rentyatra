@@ -389,10 +389,6 @@ const ItemDetail = () => {
                 </div>
                 <div className="ml-3 md:ml-4 min-w-0">
                   <h3 className="font-semibold text-sm md:text-base lg:text-lg truncate">{currentItem.owner.name}</h3>
-                  <div className="flex items-center">
-                    <Star size={14} className="text-yellow-400 fill-yellow-400 md:w-4 md:h-4" />
-                    <span className="ml-1 text-xs md:text-sm text-gray-600">{currentItem.owner.rating} Rating</span>
-                  </div>
                 </div>
               </div>
 

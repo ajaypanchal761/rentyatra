@@ -484,7 +484,13 @@ const Dashboard = () => {
                             <div className="flex items-center gap-1 text-gray-600">
                               <MapPin size={14} />
                               <span className="text-xs">
-                                {listing.location?.address || listing.location?.city || 'Location not specified'}
+                                {listing.location?.address || 
+                                 (listing.location?.city && 
+                                  listing.location.city !== 'Unknown' && 
+                                  listing.location.city !== 'Not specified' && 
+                                  listing.location.city.trim() !== '' &&
+                                  listing.location.city.length > 2 ? 
+                                  listing.location.city : 'Location not specified')}
                               </span>
                             </div>
                           </div>

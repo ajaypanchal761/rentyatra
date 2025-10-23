@@ -39,7 +39,10 @@ const FeaturedListings = () => {
             if (request.location?.address) {
               location = request.location.address;
             } else if (request.location?.city && request.location?.state && 
-                      request.location.city !== 'Unknown' && request.location.state !== 'Unknown') {
+                      request.location.city !== 'Unknown' && request.location.city !== 'Not specified' &&
+                      request.location.city.trim() !== '' &&
+                      request.location.state !== 'Unknown' && request.location.state !== 'Not specified' &&
+                      request.location.state.trim() !== '') {
               location = `${request.location.city}, ${request.location.state}`;
             }
             
