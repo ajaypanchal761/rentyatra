@@ -389,6 +389,64 @@ class ApiService {
     }
   }
 
+  async uploadAdminProfileImage(imageFile) {
+    const formData = new FormData();
+    formData.append('image', imageFile);
+
+    const url = `${this.baseURL}/admin/upload-profile-image`;
+    const config = {
+      method: 'POST',
+      headers: this.getAdminFileUploadHeaders(),
+      body: formData,
+    };
+
+    try {
+      console.log('Uploading admin profile image to:', url);
+      const response = await this.fetchWithTimeout(url, config, 120000); // 2 minutes for file uploads
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Upload failed');
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Admin Profile Image Upload Error:', error);
+      
+      // Provide more specific error messages
+      if (error.message === 'Request Timeout') {
+        throw new Error('Upload timeout - Please try again with smaller files or check your internet connection');
+      } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        throw new Error('Network error - Please check your internet connection');
+      }
+      
+      throw error;
+    }
+  }
+
+  async changeAdminPassword(currentPassword, newPassword, confirmPassword) {
+    const url = `${this.baseURL}/admin/change-password`;
+    const config = {
+      method: 'PUT',
+      headers: this.getAdminHeaders(),
+      body: JSON.stringify({ currentPassword, newPassword, confirmPassword }),
+    };
+
+    try {
+      const response = await fetch(url, config);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Password change failed');
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Change Admin Password Error:', error);
+      throw error;
+    }
+  }
+
   async getAdminStats() {
     const url = `${this.baseURL}/admin/stats`;
     const config = {

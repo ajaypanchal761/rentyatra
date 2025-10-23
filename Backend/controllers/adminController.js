@@ -1,6 +1,7 @@
 const Admin = require('../models/Admin');
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
+const { uploadProfile } = require('../config/cloudinary');
 
 // Generate JWT Token for Admin
 const generateAdminToken = (adminId) => {
@@ -338,6 +339,80 @@ const updateAdminProfile = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to update admin profile'
+    });
+  }
+};
+
+// @desc    Upload admin profile image
+// @route   POST /api/admin/upload-profile-image
+// @access  Private (Admin)
+const uploadAdminProfileImage = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: 'No image file provided'
+      });
+    }
+
+    const admin = await Admin.findById(req.admin.adminId);
+    
+    if (!admin) {
+      return res.status(404).json({
+        success: false,
+        message: 'Admin not found'
+      });
+    }
+
+    // Delete old profile image if exists
+    if (admin.profileImage) {
+      try {
+        const { cloudinary } = require('../config/cloudinary');
+        const publicId = admin.profileImage.split('/').pop().split('.')[0];
+        await cloudinary.uploader.destroy(`rentyatra/profile-images/${publicId}`);
+      } catch (error) {
+        console.error('Error deleting old profile image:', error);
+        // Continue with upload even if deletion fails
+      }
+    }
+
+    // Update admin profile with new image URL
+    admin.profileImage = req.file.path;
+    await admin.save();
+    await admin.incrementActions();
+
+    const adminResponse = {
+      id: admin._id,
+      name: admin.name,
+      email: admin.email,
+      role: admin.role,
+      permissions: admin.permissions,
+      profileImage: admin.profileImage,
+      phone: admin.phone,
+      isActive: admin.isActive,
+      isEmailVerified: admin.isEmailVerified,
+      lastLoginAt: admin.stats.lastLoginAt,
+      lastActivity: admin.lastActivity,
+      totalLogins: admin.stats.totalLogins,
+      actionsPerformed: admin.stats.actionsPerformed,
+      createdAt: admin.createdAt,
+      updatedAt: admin.updatedAt
+    };
+
+    res.status(200).json({
+      success: true,
+      message: 'Profile image uploaded successfully',
+      data: {
+        admin: adminResponse,
+        imageUrl: req.file.path
+      }
+    });
+
+  } catch (error) {
+    console.error('Upload Admin Profile Image Error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to upload profile image'
     });
   }
 };
@@ -769,6 +844,7 @@ module.exports = {
   validateAdminToken,
   getAdminProfile,
   updateAdminProfile,
+  uploadAdminProfileImage,
   changePassword,
   adminLogout,
   getAdminStats,

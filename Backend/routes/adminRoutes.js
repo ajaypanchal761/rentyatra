@@ -6,6 +6,7 @@ const {
   validateAdminToken,
   getAdminProfile,
   updateAdminProfile,
+  uploadAdminProfileImage,
   changePassword,
   adminLogout,
   getAdminStats,
@@ -16,6 +17,7 @@ const {
 } = require('../controllers/adminController');
 
 const { adminAuth, checkAdminRole, checkAdminPermission } = require('../middleware/adminAuth');
+const { uploadProfile } = require('../config/cloudinary');
 
 // @route   POST /api/admin/signup
 // @desc    Register new admin
@@ -36,6 +38,11 @@ router.get('/me', adminAuth, getAdminProfile);
 // @desc    Update admin profile
 // @access  Private (Admin)
 router.put('/profile', adminAuth, updateAdminProfile);
+
+// @route   POST /api/admin/upload-profile-image
+// @desc    Upload admin profile image
+// @access  Private (Admin)
+router.post('/upload-profile-image', adminAuth, uploadProfile.single('image'), uploadAdminProfileImage);
 
 // @route   PUT /api/admin/change-password
 // @desc    Change admin password

@@ -7,6 +7,8 @@ import ProductManagementView from '../components/views/ProductManagementView';
 import CategoryManagementView from '../components/views/CategoryManagementView';
 import BannerManagementView from '../components/views/BannerManagementView';
 import RentalListingManagementView from '../components/views/RentalListingManagementView';
+import AdminProfileView from '../components/views/AdminProfileView';
+import AdminSettingsView from '../components/views/AdminSettingsView';
 
 // Simple placeholder component for other sections
 function PlaceholderView({ title }) {
@@ -53,6 +55,10 @@ export default function AdminDashboard() {
                 return <PlaceholderView title="Notification Management" />;
             case 'Referrals':
                 return <PlaceholderView title="Referral Management" />;
+            case 'Profile':
+                return <AdminProfileView />;
+            case 'Settings':
+                return <AdminSettingsView />;
             default:
                 return <DashboardView />;
         }
@@ -67,7 +73,7 @@ export default function AdminDashboard() {
 
                 {/* Main Content Area */}
                 <div className="ml-64 flex flex-col min-h-screen">
-                    <AdminHeader pageTitle={activePage} />
+                    <AdminHeader pageTitle={activePage} setActivePage={setActivePage} />
                     <main className="flex-1 p-8 mt-16">
                         {renderContent()}
                     </main>
