@@ -12,7 +12,13 @@
     "start": "node server.js",
     "build": "echo 'No build step required for Node.js backend'"
   },
-  "keywords": ["rentyatra", "backend", "api", "rental", "marketplace"],
+  "keywords": [
+    "rentyatra",
+    "backend",
+    "api",
+    "rental",
+    "marketplace"
+  ],
   "author": "RentYatra Team",
   "license": "ISC",
   "description": "RentYatra Backend API - Rental marketplace backend service",
@@ -32,6 +38,7 @@
     "multer-storage-cloudinary": "^4.0.0",
     "nodemon": "^3.1.10",
     "or": "^0.2.0",
+    "socket.io": "^4.8.1",
     "tesseract.js": "^6.0.1"
   }
 }

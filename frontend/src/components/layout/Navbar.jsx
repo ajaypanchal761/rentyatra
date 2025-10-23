@@ -14,7 +14,7 @@ const Navbar = () => {
   const [showLocationMenu, setShowLocationMenu] = useState(false);
   const [currentCategoryIndex, setCurrentCategoryIndex] = useState(0);
   const { isAuthenticated, user, logout } = useAuth();
-  const { searchQuery, setSearchQuery, location, favorites, items, toggleFavorite } = useApp();
+  const { searchQuery, setSearchQuery, location, favorites, items, toggleFavorite, getFavoritesCount } = useApp();
   const navigate = useNavigate();
 
   const categoryNames = ['Cars', 'Bikes', 'Mobiles', 'Properties', 'Jobs', 'Furniture', 'Electronics', 'Fashion'];
@@ -87,14 +87,14 @@ const Navbar = () => {
               </form>
               <div className="relative flex-shrink-0">
                 <button
-                  onClick={() => setShowFavoritesDropdown(!showFavoritesDropdown)}
+                  onClick={() => navigate('/favorites')}
                   className="p-2 hover:bg-gray-100 rounded-full transition relative"
                   title="Favorites"
                 >
                   <Heart className="text-gray-700" size={22} />
-                  {favorites.length > 0 && (
+                  {getFavoritesCount() >= 0 && (
                     <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
-                      {favorites.length}
+                      {getFavoritesCount()}
                     </span>
                   )}
                 </button>
@@ -110,12 +110,12 @@ const Navbar = () => {
                       <div className="bg-gradient-to-r from-red-500 to-pink-600 px-4 py-3 text-white">
                         <h3 className="font-bold text-lg flex items-center gap-2">
                           <Heart size={20} fill="currentColor" />
-                          My Favorites ({favorites.length})
+                          My Favorites ({getFavoritesCount()})
                         </h3>
                       </div>
                       
                       <div className="max-h-80 overflow-y-auto">
-                        {favorites.length === 0 ? (
+                        {getFavoritesCount() === 0 ? (
                           <div className="p-8 text-center">
                             <Heart size={48} className="mx-auto text-gray-300 mb-3" />
                             <p className="text-gray-500 mb-2">No favorites yet</p>
@@ -164,7 +164,7 @@ const Navbar = () => {
                         )}
                       </div>
 
-                      {favorites.length > 0 && (
+                      {getFavoritesCount() > 0 && (
                         <div className="border-t border-gray-200 p-3 bg-gray-50">
                           <button
                             onClick={() => {
@@ -272,14 +272,14 @@ const Navbar = () => {
             {/* Heart Icon */}
             <div className="relative flex-shrink-0">
               <button
-                onClick={() => setShowFavoritesDropdown(!showFavoritesDropdown)}
+                onClick={() => navigate('/favorites')}
                 className="p-2 hover:bg-gray-100 rounded-full transition relative"
                 title="Favorites"
               >
                 <Heart className="text-gray-700" size={22} />
-                {favorites.length > 0 && (
+                {getFavoritesCount() >= 0 && (
                   <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
-                    {favorites.length}
+                    {getFavoritesCount()}
                   </span>
                 )}
               </button>
@@ -295,12 +295,12 @@ const Navbar = () => {
                     <div className="bg-gradient-to-r from-red-500 to-pink-600 px-4 py-3 text-white">
                       <h3 className="font-bold text-lg flex items-center gap-2">
                         <Heart size={20} fill="currentColor" />
-                        My Favorites ({favorites.length})
+                        My Favorites ({getFavoritesCount()})
                       </h3>
                     </div>
                     
                     <div className="max-h-80 overflow-y-auto">
-                      {favorites.length === 0 ? (
+                      {getFavoritesCount() === 0 ? (
                         <div className="p-8 text-center">
                           <Heart size={48} className="mx-auto text-gray-300 mb-3" />
                           <p className="text-gray-500 mb-2">No favorites yet</p>
@@ -349,7 +349,7 @@ const Navbar = () => {
                       )}
                     </div>
 
-                    {favorites.length > 0 && (
+                    {getFavoritesCount() > 0 && (
                       <div className="border-t border-gray-200 p-3 bg-gray-50">
                         <button
                           onClick={() => {

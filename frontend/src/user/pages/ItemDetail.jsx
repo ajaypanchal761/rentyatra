@@ -42,6 +42,9 @@ const ItemDetail = () => {
   // Get current item (either regular item or rental request) - memoized to prevent infinite re-renders
   const currentItem = useMemo(() => {
     if (isRentalRequest && rentalRequest) {
+      console.log('Rental request data:', rentalRequest);
+      console.log('Rental request user:', rentalRequest.user);
+      
       // Transform rental request to match item structure
       return {
         id: rentalRequest._id,
@@ -177,8 +180,31 @@ const ItemDetail = () => {
       navigate('/login');
       return;
     }
-    // In a real app, this would open a chat or messaging interface
-    alert('Opening chat with owner...');
+    
+    // Check if owner exists and has an ID
+    if (!currentItem.owner) {
+      console.error('Owner information not available');
+      alert('Owner information not available');
+      return;
+    }
+    
+    // Get the owner ID (try both _id and id fields)
+    const ownerId = currentItem.owner._id || currentItem.owner.id;
+    
+    if (!ownerId) {
+      console.error('Owner ID not found');
+      console.log('Owner object:', currentItem.owner);
+      alert('Owner ID not found');
+      return;
+    }
+    
+    console.log('Chat with owner:', currentItem.owner);
+    console.log('Owner ID:', ownerId);
+    console.log('Owner name:', currentItem.owner.name);
+    console.log('Owner email:', currentItem.owner.email);
+    
+    // Navigate to chat with the owner
+    navigate(`/chat/${ownerId}`);
   };
 
   const handleShare = () => {

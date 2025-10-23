@@ -3,21 +3,31 @@ import { Search, Sparkles, TrendingUp, Shield, Zap } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 import Button from '../common/Button';
 import LocationSearch from './LocationSearch';
+import { memo, useMemo, useCallback } from 'react';
 
-const HeroSection = () => {
+const HeroSection = memo(() => {
   const { searchQuery, setSearchQuery } = useApp();
   const navigate = useNavigate();
 
-  const handleSearch = (e) => {
+  const handleSearch = useCallback((e) => {
     e.preventDefault();
     navigate('/listings');
-  };
+  }, [navigate]);
 
-  const stats = [
+  const stats = useMemo(() => [
     { label: 'Active Rentals', value: '50K+', icon: TrendingUp },
     { label: 'Verified Users', value: '100K+', icon: Shield },
     { label: 'Categories', value: '12+', icon: Sparkles },
-  ];
+  ], []);
+
+  const popularSearches = useMemo(() => 
+    ['Cars', 'Bikes', 'Laptops', 'Furniture', 'Cameras', 'Electronics'], []
+  );
+
+  const handlePopularSearch = useCallback((term) => {
+    setSearchQuery(term);
+    navigate('/listings');
+  }, [setSearchQuery, navigate]);
 
   return (
     <div className="relative bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 text-white overflow-hidden">
@@ -105,13 +115,10 @@ const HeroSection = () => {
               <Sparkles size={14} />
               Popular:
             </span>
-            {['Cars', 'Bikes', 'Laptops', 'Furniture', 'Cameras', 'Electronics'].map((term) => (
+            {popularSearches.map((term) => (
               <button
                 key={term}
-                onClick={() => {
-                  setSearchQuery(term);
-                  navigate('/listings');
-                }}
+                onClick={() => handlePopularSearch(term)}
                 className="text-xs md:text-sm bg-white/15 hover:bg-white/25 backdrop-blur-md border border-white/20 px-4 py-2 rounded-full transition-all hover:scale-105 hover:-translate-y-0.5 font-medium shadow-lg"
               >
                 {term}
@@ -139,7 +146,9 @@ const HeroSection = () => {
       </div>
     </div>
   );
-};
+});
+
+HeroSection.displayName = 'HeroSection';
 
 export default HeroSection;
 

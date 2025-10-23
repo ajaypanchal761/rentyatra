@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, memo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MapPin, Heart, Loader2 } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
@@ -6,88 +6,20 @@ import Card from '../common/Card';
 import Button from '../common/Button';
 import StarRating from '../common/StarRating';
 import ImageCarousel from '../common/ImageCarousel';
+import { FeaturedListingsSkeleton } from '../common/SkeletonLoader';
+import { useHeroData } from '../../hooks/useHeroData';
 import { format } from 'date-fns';
-import apiService from '../../services/api';
 
-const FeaturedListings = () => {
+const FeaturedListings = memo(() => {
   const { toggleFavorite, isFavorite, getAverageRating, getReviewsCount, setSelectedCategory } = useApp();
   const navigate = useNavigate();
   const [animatingHeart, setAnimatingHeart] = useState(null);
-  const [featuredItems, setFeaturedItems] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-
-  // Fetch featured rental requests for the homepage
-  useEffect(() => {
-    const fetchFeaturedListings = async () => {
-      try {
-        setLoading(true);
-        setError('');
-        
-        // Fetch featured rental requests using the public API
-        const response = await apiService.getFeaturedRentalRequests(8);
-
-        if (response.success) {
-          console.log('Featured rental requests data:', response.data.requests);
-          
-          // Transform rental requests to match the expected format
-          const transformedListings = response.data.requests.map(request => {
-            console.log('Processing request:', request);
-            
-            // Use address if available, otherwise fallback to city, state
-            let location = 'Location not specified';
-            if (request.location?.address) {
-              location = request.location.address;
-            } else if (request.location?.city && request.location?.state && 
-                      request.location.city !== 'Unknown' && request.location.city !== 'Not specified' &&
-                      request.location.city.trim() !== '' &&
-                      request.location.state !== 'Unknown' && request.location.state !== 'Not specified' &&
-                      request.location.state.trim() !== '') {
-              location = `${request.location.city}, ${request.location.state}`;
-            }
-            
-            return {
-              id: request._id,
-              title: request.title,
-              description: request.description,
-              price: request.price?.amount || 0,
-              location: location,
-              images: request.images ? (() => {
-                // Sort images to put primary image first
-                const sortedImages = [...request.images].sort((a, b) => {
-                  if (a.isPrimary && !b.isPrimary) return -1;
-                  if (!a.isPrimary && b.isPrimary) return 1;
-                  return 0;
-                });
-                return sortedImages.map(img => img.url);
-              })() : [],
-              video: request.video?.url || null,
-              postedDate: request.createdAt,
-              category: request.category?.name || 'General',
-              product: request.product?.name || 'General',
-              condition: 'Good',
-              owner: request.user,
-              averageRating: 0,
-              totalReviews: 0,
-              isBoosted: false
-            };
-          });
-          
-          console.log('Transformed listings:', transformedListings);
-          setFeaturedItems(transformedListings);
-        } else {
-          setError('Failed to load featured listings');
-        }
-      } catch (error) {
-        console.error('Error fetching featured listings:', error);
-        setError('Failed to load featured listings');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchFeaturedListings();
-  }, []);
+  
+  // Use optimized hero data hook
+  const { data, loading: heroLoading, errors } = useHeroData();
+  const { featuredListings: featuredItems } = data;
+  const { featuredListings: listingsLoading } = heroLoading;
+  const { featuredListings: error } = errors;
 
   const handleItemClick = (itemId) => {
     navigate(`/item/${itemId}`);
@@ -123,11 +55,8 @@ const FeaturedListings = () => {
           </button>
         </div>
 
-        {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="animate-spin text-blue-600 mr-3" size={24} />
-            <p className="text-gray-600">Loading featured listings...</p>
-          </div>
+        {listingsLoading ? (
+          <FeaturedListingsSkeleton count={8} />
         ) : error ? (
           <div className="text-center py-12">
             <p className="text-red-500 text-lg mb-4">{error}</p>
@@ -227,7 +156,9 @@ const FeaturedListings = () => {
       </div>
     </div>
   );
-};
+});
+
+FeaturedListings.displayName = 'FeaturedListings';
 
 export default FeaturedListings;
 

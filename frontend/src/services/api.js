@@ -1825,9 +1825,93 @@ class ApiService {
     }
   }
 
+  // Favorites APIs
+  async getFavorites() {
+    return this.request('/favorites');
+  }
+
+  async addToFavorites(itemId, itemType = 'rental-request') {
+    return this.request('/favorites', {
+      method: 'POST',
+      body: JSON.stringify({ itemId, itemType }),
+    });
+  }
+
+  async removeFromFavorites(itemId) {
+    return this.request(`/favorites/${itemId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async toggleFavorite(itemId, itemType = 'rental-request') {
+    try {
+      return await this.request('/favorites/toggle', {
+        method: 'POST',
+        body: JSON.stringify({ itemId, itemType }),
+      });
+    } catch (error) {
+      // Handle 404 or route not found errors gracefully for favorites
+      if (error.message.includes('Route not found') || error.message.includes('404')) {
+        return { success: false, message: 'Favorites API not available' };
+      }
+      throw error;
+    }
+  }
+
+  async getFavoriteItems(page = 1, limit = 12, search = '') {
+    try {
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: limit.toString(),
+      });
+      
+      if (search) params.append('search', search);
+
+      return await this.request(`/favorites/items?${params.toString()}`);
+    } catch (error) {
+      // Handle 404 or route not found errors gracefully for favorites
+      if (error.message.includes('Route not found') || error.message.includes('404')) {
+        return { success: false, message: 'Favorites API not available' };
+      }
+      throw error;
+    }
+  }
+
   // Health check
   async healthCheck() {
     return this.request('/health');
+  }
+
+  // HTTP method shortcuts
+  async get(endpoint) {
+    return this.request(endpoint);
+  }
+
+  async post(endpoint, data) {
+    return this.request(endpoint, {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+  }
+
+  async put(endpoint, data) {
+    return this.request(endpoint, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    });
+  }
+
+  async patch(endpoint, data) {
+    return this.request(endpoint, {
+      method: 'PATCH',
+      body: JSON.stringify(data)
+    });
+  }
+
+  async delete(endpoint) {
+    return this.request(endpoint, {
+      method: 'DELETE'
+    });
   }
 }
 

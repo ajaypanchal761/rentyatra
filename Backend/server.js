@@ -3,6 +3,8 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const path = require('path');
+const http = require('http');
+const socketIo = require('socket.io');
 
 // Load environment variables
 dotenv.config();
@@ -29,8 +31,10 @@ const publicRentalRequestRoutes = require('./routes/publicRentalRequestRoutes');
 const bannerRoutes = require('./routes/bannerRoutes');
 const rentalRequestRoutes = require('./routes/rentalRequestRoutes');
 const reviewRoutes = require('./routes/reviewRoutes');
+const chatRoutes = require('./routes/chatRoutes');
 
 const app = express();
+const server = http.createServer(app);
 
 // CORS Configuration
 const corsOptions = {
@@ -70,8 +74,137 @@ app.use(cors(corsOptions));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+// Socket.io configuration
+const io = socketIo(server, {
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"]
+  }
+});
+
+// Socket.io connection handling
+io.on('connection', (socket) => {
+  console.log('User connected:', socket.id);
+  console.log('Socket.io server is running and accepting connections');
+  console.log('Socket transport:', socket.conn.transport.name);
+
+  // Join user to their personal room
+  socket.on('join_user', (userId) => {
+    socket.join(`user_${userId}`);
+    console.log(`User ${userId} joined their room`);
+  });
+
+  // Join conversation room
+  socket.on('join_conversation', (conversationId) => {
+    socket.join(`conversation_${conversationId}`);
+    console.log(`User joined conversation: ${conversationId}`);
+  });
+
+  // Handle new message
+  socket.on('send_message', async (data) => {
+    try {
+      const Message = require('./models/Message');
+      const User = require('./models/User');
+      
+      const { senderId, receiverId, content, productId } = data;
+      
+      // Create conversation ID
+      const conversationId = Message.generateConversationId(senderId, receiverId);
+      
+      // Create message
+      const message = new Message({
+        sender: senderId,
+        receiver: receiverId,
+        content,
+        conversationId,
+        product: productId || null
+      });
+      
+      await message.save();
+      
+      // Populate sender info
+      await message.populate('sender', 'name email profilePicture');
+      await message.populate('receiver', 'name email profilePicture');
+      if (productId) {
+        await message.populate('product', 'title images');
+      }
+      
+      // Emit to conversation room
+      io.to(`conversation_${conversationId}`).emit('new_message', message);
+      
+      // Emit to receiver's personal room for notifications
+      io.to(`user_${receiverId}`).emit('message_notification', {
+        message,
+        unreadCount: await Message.countDocuments({
+          receiver: receiverId,
+          isRead: false
+        })
+      });
+      
+    } catch (error) {
+      console.error('Error sending message:', error);
+      socket.emit('message_error', { error: 'Failed to send message' });
+    }
+  });
+
+  // Handle message read status
+  socket.on('mark_message_read', async (data) => {
+    try {
+      const Message = require('./models/Message');
+      const { messageId, userId } = data;
+      
+      const message = await Message.findById(messageId);
+      if (message && message.receiver.toString() === userId) {
+        await message.markAsRead();
+        
+        // Notify sender that message was read
+        io.to(`user_${message.sender}`).emit('message_read', {
+          messageId,
+          readAt: message.readAt
+        });
+      }
+    } catch (error) {
+      console.error('Error marking message as read:', error);
+    }
+  });
+
+  // Handle typing indicators
+  socket.on('typing_start', (data) => {
+    socket.to(`conversation_${data.conversationId}`).emit('user_typing', {
+      userId: data.userId,
+      isTyping: true
+    });
+  });
+
+  socket.on('typing_stop', (data) => {
+    socket.to(`conversation_${data.conversationId}`).emit('user_typing', {
+      userId: data.userId,
+      isTyping: false
+    });
+  });
+
+  // Handle test messages
+  socket.on('test_message', (data) => {
+    console.log('Test message received:', data);
+    socket.emit('test_response', { 
+      message: 'Test response received', 
+      originalMessage: data.message,
+      timestamp: new Date().toISOString()
+    });
+  });
+
+  // Handle disconnect
+  socket.on('disconnect', () => {
+    console.log('User disconnected:', socket.id);
+  });
+});
+
+// Make io available to routes
+app.set('io', io);
+
 // Static files
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 
 // Import database connection
 const connectDB = require('./config/db');
@@ -89,6 +222,7 @@ app.use('/api/products', publicProductRoutes);
 app.use('/api/categories', publicCategoryRoutes);
 app.use('/api/rental-requests', publicRentalRequestRoutes);
 app.use('/api/reviews', reviewRoutes);
+app.use('/api/chat', chatRoutes);
 
 // Health check route
 app.get('/api/health', (req, res) => {
@@ -137,7 +271,7 @@ const startServer = async () => {
     
     // Try to start server with retry mechanism
     const startServerWithRetry = (port, host, retries = 3) => {
-      const server = app.listen(port, host, () => {
+      const httpServer = server.listen(port, host, () => {
       console.log(`
 🚀 RentYatra Backend Server Started Successfully!
 📡 Server running on: ${HOST}:${PORT}
@@ -157,7 +291,7 @@ const startServer = async () => {
       `);
     });
     
-    server.on('error', (error) => {
+    httpServer.on('error', (error) => {
       if (error.code === 'EADDRINUSE') {
         console.log(`❌ Port ${port} is already in use, trying port ${port + 1}...`);
         if (retries > 0) {
@@ -174,15 +308,15 @@ const startServer = async () => {
       }
     });
     
-    return server;
+    return httpServer;
     };
     
-    const server = startServerWithRetry(PORT, HOST);
+    const httpServer = startServerWithRetry(PORT, HOST);
 
     // Graceful shutdown
     process.on('SIGTERM', () => {
       console.log('🛑 SIGTERM received, shutting down gracefully');
-      server.close(() => {
+      httpServer.close(() => {
         console.log('🔌 Server closed');
         process.exit(0);
       });

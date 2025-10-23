@@ -1,14 +1,54 @@
+import React from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { AdminAuthProvider } from './contexts/AdminAuthContext';
-import { AppProvider } from './contexts/AppContext';
+import { AppProvider, useApp } from './contexts/AppContext';
 import { SubscriptionProvider } from './contexts/SubscriptionContext';
 import { CategoryProvider } from './contexts/CategoryContext';
+import { SocketProvider } from './contexts/SocketContext';
 import ScrollToTop from './components/common/ScrollToTop';
 import Navbar from './components/layout/Navbar';
 import Footer from './components/layout/Footer';
 import BottomNav from './components/layout/BottomNav';
 import SubscriptionNotifications from './components/subscription/SubscriptionNotifications';
+
+// Debug component to expose debug functions to window object
+const DebugHelper = () => {
+  const { debugFavorites, clearAllFavorites, cleanupFavorites, forceResetFavorites, nuclearResetFavorites, forceEmptyFavorites, forceClearAllFavorites, nuclearResetCount, forceResetToZero, completeNuclearReset, testFavoritesCount, checkAllFavoritesData } = useApp();
+  
+  // Expose debug functions to window object for console debugging
+  React.useEffect(() => {
+    window.debugFavorites = debugFavorites;
+    window.clearAllFavorites = clearAllFavorites;
+    window.cleanupFavorites = cleanupFavorites;
+    window.forceResetFavorites = forceResetFavorites;
+    window.nuclearResetFavorites = nuclearResetFavorites;
+    window.forceEmptyFavorites = forceEmptyFavorites;
+    window.forceClearAllFavorites = forceClearAllFavorites;
+    window.nuclearResetCount = nuclearResetCount;
+    window.forceResetToZero = forceResetToZero;
+    window.completeNuclearReset = completeNuclearReset;
+    window.testFavoritesCount = testFavoritesCount;
+    window.checkAllFavoritesData = checkAllFavoritesData;
+    
+    return () => {
+      delete window.debugFavorites;
+      delete window.clearAllFavorites;
+      delete window.cleanupFavorites;
+      delete window.forceResetFavorites;
+      delete window.nuclearResetFavorites;
+      delete window.forceEmptyFavorites;
+      delete window.forceClearAllFavorites;
+      delete window.nuclearResetCount;
+      delete window.forceResetToZero;
+      delete window.completeNuclearReset;
+      delete window.testFavoritesCount;
+      delete window.checkAllFavoritesData;
+    };
+  }, [debugFavorites, clearAllFavorites, cleanupFavorites, forceResetFavorites, nuclearResetFavorites, forceEmptyFavorites, forceClearAllFavorites, nuclearResetCount, forceResetToZero, completeNuclearReset, testFavoritesCount, checkAllFavoritesData]);
+  
+  return null;
+};
 import Home from './user/pages/Home';
 import Listings from './user/pages/Listings';
 import ItemDetail from './user/pages/ItemDetail';
@@ -19,6 +59,8 @@ import PostAd from './user/pages/PostAd';
 import Dashboard from './user/pages/Dashboard';
 import Profile from './user/pages/Profile';
 import Messages from './user/pages/Messages';
+import Chat from './user/pages/Chat';
+import Favorites from './user/pages/Favorites';
 import SubscriptionPage from './user/pages/subscription/SubscriptionPage';
 import MySubscription from './user/pages/subscription/MySubscription';
 import MyBoosts from './user/pages/subscription/MyBoosts';
@@ -62,16 +104,17 @@ function AppContent() {
   const hideNavbar = location.pathname.startsWith('/category');
   const hideFooter = location.pathname === '/' || location.pathname.startsWith('/category');
   
-  // Hide navbars on auth pages and dashboard
+  // Hide navbars on auth pages, dashboard, and chat pages
   const isAuthPage = location.pathname === '/login' || location.pathname === '/signup';
   const isDashboardPage = location.pathname.startsWith('/dashboard') || location.pathname === '/favorites' || location.pathname === '/bookings' || location.pathname === '/messages';
+  const isChatPage = location.pathname.startsWith('/chat');
   
-  // Hide navbar and footer completely on auth pages
-  const shouldHideNavbar = hideNavbar || isAuthPage;
-  const shouldHideFooter = hideFooter || isAuthPage;
+  // Hide navbar and footer completely on auth pages and chat pages
+  const shouldHideNavbar = hideNavbar || isAuthPage || isChatPage;
+  const shouldHideFooter = hideFooter || isAuthPage || isChatPage;
   
-  // Bottom navigation should be visible on all user pages except auth pages
-  const shouldShowBottomNav = !isAuthPage;
+  // Bottom navigation should be visible on all user pages except auth pages and chat pages
+  const shouldShowBottomNav = !isAuthPage && !isChatPage;
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -96,9 +139,10 @@ function AppContent() {
           <Route path="/dashboard/profile" element={<Profile />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/dashboard/:tab" element={<Dashboard />} />
-          <Route path="/favorites" element={<Dashboard />} />
+          <Route path="/favorites" element={<Favorites />} />
           <Route path="/bookings" element={<Dashboard />} />
           <Route path="/messages" element={<Messages />} />
+          <Route path="/chat/:userId" element={<Chat />} />
           <Route path="/post-ad" element={<PostAd />} />
           
           {/* Subscription Routes */}
@@ -126,8 +170,11 @@ function App() {
         <AdminAuthProvider>
           <CategoryProvider>
             <AppProvider>
+              <DebugHelper />
               <SubscriptionProvider>
-                <AppContent />
+                <SocketProvider>
+                  <AppContent />
+                </SocketProvider>
               </SubscriptionProvider>
             </AppProvider>
           </CategoryProvider>

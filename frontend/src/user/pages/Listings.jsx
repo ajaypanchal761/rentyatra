@@ -6,36 +6,13 @@ import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import StarRating from '../../components/common/StarRating';
 import LocationSearch from '../../components/home/LocationSearch';
+import ImageCarousel from '../../components/common/ImageCarousel';
 import { format } from 'date-fns';
+import apiService from '../../services/api';
 
-// Import category images
-import carImg from '../../assets/car.png';
-import mobileImg from '../../assets/mobile.png';
-import bikeImg from '../../assets/bike.png';
-import furnitureImg from '../../assets/furniture.png';
-import fashionImg from '../../assets/fashion.png';
-import bookImg from '../../assets/book.png';
-import sportImg from '../../assets/sport.png';
-import realstateImg from '../../assets/realstate.png';
-import petImg from '../../assets/pet.png';
-
-const imageMap = {
-  'car.png': carImg,
-  'mobile.png': mobileImg,
-  'bike.png': bikeImg,
-  'furniture.png': furnitureImg,
-  'fashion.png': fashionImg,
-  'book.png': bookImg,
-  'sport.png': sportImg,
-  'realstate.png': realstateImg,
-  'pet.png': petImg,
-};
 
 const Listings = () => {
   const {
-    categories,
-    selectedCategory,
-    setSelectedCategory,
     priceRange,
     setPriceRange,
     location,
@@ -50,139 +27,96 @@ const Listings = () => {
   const locationState = useLocation();
   const [showFilters, setShowFilters] = useState(false);
   const [sortBy, setSortBy] = useState('newest');
-  const [conditionFilter, setConditionFilter] = useState('all');
   const [minRating, setMinRating] = useState(0);
-  const [selectedSubcategory, setSelectedSubcategory] = useState(null);
   const [budgetFilter, setBudgetFilter] = useState(null);
+  const [featuredListings, setFeaturedListings] = useState([]);
+  const [loadingFeatured, setLoadingFeatured] = useState(false);
   const navigate = useNavigate();
 
-  // Get subcategory and budget from navigation state
-  useEffect(() => {
-    if (locationState.state?.subcategory) {
-      setSelectedSubcategory(locationState.state.subcategory);
+  // Fetch featured listings
+  const fetchFeaturedListings = async () => {
+    setLoadingFeatured(true);
+    try {
+      const response = await apiService.getFeaturedRentalRequests(50); // Get more featured listings
+      if (response.success) {
+        // Transform rental requests to match the expected format
+        const transformedListings = response.data.requests.map(request => {
+          // Use address if available, otherwise fallback to city, state
+          let location = 'Location not specified';
+          if (request.location?.address) {
+            location = request.location.address;
+          } else if (request.location?.city && request.location?.state && 
+                    request.location.city !== 'Unknown' && request.location.city !== 'Not specified' &&
+                    request.location.city.trim() !== '' &&
+                    request.location.state !== 'Unknown' && request.location.state !== 'Not specified' &&
+                    request.location.state.trim() !== '') {
+            location = `${request.location.city}, ${request.location.state}`;
+          }
+          
+          return {
+            id: request._id,
+            title: request.title,
+            description: request.description,
+            price: request.price?.amount || 0,
+            pricePerDay: request.price?.amount || 0,
+            location: location,
+            images: request.images ? (() => {
+              // Sort images to put primary image first
+              const sortedImages = [...request.images].sort((a, b) => {
+                if (a.isPrimary && !b.isPrimary) return -1;
+                if (!a.isPrimary && b.isPrimary) return 1;
+                return 0;
+              });
+              return sortedImages.map(img => img.url);
+            })() : [],
+            video: request.video?.url || null,
+            postedDate: request.createdAt,
+            category: request.category?.name || 'General',
+            product: request.product?.name || 'General',
+            condition: 'Good',
+            owner: request.user,
+            averageRating: 0,
+            totalReviews: 0,
+            isBoosted: false,
+            isFeatured: true // Mark as featured
+          };
+        });
+        
+        setFeaturedListings(transformedListings);
+      }
+    } catch (error) {
+      console.error('Error fetching featured listings:', error);
+    } finally {
+      setLoadingFeatured(false);
     }
+  };
+
+  // Get budget from navigation state
+  useEffect(() => {
     if (locationState.state?.budget) {
       setBudgetFilter(locationState.state.budget);
     }
   }, [locationState.state]);
 
-  // Subcategories based on selected category with icons
-  const getSubcategories = () => {
-    if (!selectedCategory) return [];
-    
-    const subcategoryMap = {
-      cars: [
-        { name: 'Sedan', icon: '🚗' },
-        { name: 'SUV', icon: '🚙' },
-        { name: 'Hatchback', icon: '🚕' },
-        { name: 'Sports Car', icon: '🏎️' },
-        { name: 'Luxury', icon: '🚐' },
-        { name: 'Electric', icon: '⚡' },
-      ],
-      bikes: [
-        { name: 'Sports Bike', icon: '🏍️' },
-        { name: 'Cruiser', icon: '🛵' },
-        { name: 'Scooter', icon: '🛴' },
-        { name: 'Commuter', icon: '🚲' },
-        { name: 'Electric', icon: '⚡' },
-        { name: 'Vintage', icon: '🎪' },
-      ],
-      mobiles: [
-        { name: 'Smartphones', icon: '📱' },
-        { name: 'Feature Phones', icon: '📞' },
-        { name: 'Tablets', icon: '📱' },
-        { name: 'Accessories', icon: '🔌' },
-        { name: 'Smartwatches', icon: '⌚' },
-        { name: 'Gaming', icon: '🎮' },
-      ],
-      properties: [
-        { name: 'Apartments', icon: '🏢' },
-        { name: 'Villas', icon: '🏠' },
-        { name: 'Plots', icon: '🏗️' },
-        { name: 'Commercial', icon: '🏬' },
-        { name: 'PG/Hostel', icon: '🛏️' },
-        { name: 'Farmhouse', icon: '🌾' },
-      ],
-      furniture: [
-        { name: 'Sofa Sets', icon: '🛋️' },
-        { name: 'Beds', icon: '🛏️' },
-        { name: 'Dining Tables', icon: '🪑' },
-        { name: 'Wardrobes', icon: '🚪' },
-        { name: 'Study Tables', icon: '📚' },
-        { name: 'Office Furniture', icon: '💼' },
-      ],
-      electronics: [
-        { name: 'Washing Machine', icon: '🧺' },
-        { name: 'Refrigerator', icon: '❄️' },
-        { name: 'Air Conditioner', icon: '🌬️' },
-        { name: 'TV', icon: '📺' },
-        { name: 'Camera', icon: '📷' },
-        { name: 'Microwave', icon: '📦' },
-      ],
-      fashion: [
-        { name: "Men's Clothing", icon: '👔' },
-        { name: "Women's Clothing", icon: '👗' },
-        { name: 'Footwear', icon: '👞' },
-        { name: 'Watches', icon: '⌚' },
-        { name: 'Bags', icon: '👜' },
-        { name: 'Accessories', icon: '💍' },
-      ],
-      books: [
-        { name: 'Textbooks', icon: '📚' },
-        { name: 'Novels', icon: '📖' },
-        { name: 'Comics', icon: '📰' },
-        { name: 'Magazines', icon: '📑' },
-        { name: 'Reference', icon: '📕' },
-        { name: 'Children Books', icon: '📘' },
-      ],
-      sports: [
-        { name: 'Cricket', icon: '🏏' },
-        { name: 'Football', icon: '⚽' },
-        { name: 'Gym Equipment', icon: '💪' },
-        { name: 'Cycling', icon: '🚴' },
-        { name: 'Badminton', icon: '🏸' },
-        { name: 'Swimming', icon: '🏊' },
-      ],
-      pets: [
-        { name: 'Dogs', icon: '🐕' },
-        { name: 'Cats', icon: '🐈' },
-        { name: 'Birds', icon: '🦜' },
-        { name: 'Fish', icon: '🐠' },
-        { name: 'Pet Food', icon: '🍖' },
-        { name: 'Accessories', icon: '🦴' },
-      ],
-    };
-    
-    return subcategoryMap[selectedCategory] || [];
-  };
+  // Fetch featured listings on component mount
+  useEffect(() => {
+    fetchFeaturedListings();
+  }, []);
 
-  const subcategories = getSubcategories();
   
-  let filteredItems = getFilteredItems();
+  // Combine regular items with featured listings
+  let allItems = [...getFilteredItems(), ...featuredListings];
   
-  // Apply subcategory filter
-  if (selectedSubcategory) {
-    filteredItems = filteredItems.filter(item =>
-      item.subcategory?.toLowerCase() === selectedSubcategory.toLowerCase() ||
-      item.title?.toLowerCase().includes(selectedSubcategory.toLowerCase())
-    );
-  }
   
   // Apply additional filters
-  if (conditionFilter !== 'all') {
-    filteredItems = filteredItems.filter(item => 
-      item.condition?.toLowerCase() === conditionFilter.toLowerCase()
-    );
-  }
-  
   if (minRating > 0) {
-    filteredItems = filteredItems.filter(item => 
+    allItems = allItems.filter(item => 
       getAverageRating(item.id) >= minRating
     );
   }
   
   // Apply sorting
-  const sortedItems = [...filteredItems].sort((a, b) => {
+  const sortedItems = [...allItems].sort((a, b) => {
     switch (sortBy) {
       case 'price-low':
         return (a.pricePerDay || a.price) - (b.pricePerDay || b.price);
@@ -198,8 +132,13 @@ const Listings = () => {
     }
   });
 
-  const handleItemClick = (itemId) => {
-    navigate(`/item/${itemId}`);
+  const handleItemClick = (item) => {
+    // Check if it's a featured listing (rental request)
+    if (item.isFeatured) {
+      navigate(`/rental/${item.id}`);
+    } else {
+      navigate(`/item/${item.id}`);
+    }
   };
 
   const handleFavoriteClick = (e, itemId) => {
@@ -208,194 +147,96 @@ const Listings = () => {
   };
 
   const clearFilters = () => {
-    setSelectedCategory(null);
-    setSelectedSubcategory(null);
     setBudgetFilter(null);
     setPriceRange({ min: 0, max: 50000 });
     setLocation('');
-    setConditionFilter('all');
     setMinRating(0);
     setSortBy('newest');
   };
 
   // Check if any filters are active
-  const hasActiveFilters = selectedCategory || selectedSubcategory || budgetFilter || location || priceRange.min > 0 || priceRange.max < 50000 || conditionFilter !== 'all' || minRating > 0;
+  const hasActiveFilters = budgetFilter || location || priceRange.min > 0 || priceRange.max < 50000 || minRating > 0;
 
   return (
     <div className="min-h-screen bg-gray-50 py-3 px-3 pb-20 md:pb-6">
       <div className="max-w-7xl mx-auto">
-        <div className="flex justify-between items-center mb-3">
-          <h1 className="text-base md:text-xl font-bold text-gray-900">
-            All Listings
-            <span className="text-xs font-normal text-gray-500 ml-1.5">
-              ({sortedItems.length})
-            </span>
-          </h1>
-          <button
-            onClick={() => setShowFilters(!showFilters)}
-            className="md:hidden flex items-center justify-center w-8 h-8 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-all"
-          >
-            <SlidersHorizontal size={16} />
-          </button>
-        </div>
+        {/* Sticky Header */}
+        <div className="sticky top-0 z-40 bg-gray-50 py-3 -mx-3 px-3">
+          <div className="flex justify-between items-center mb-3">
+            <h1 className="text-base md:text-xl font-bold text-gray-900">
+              All Listings
+              <span className="text-xs font-normal text-gray-500 ml-1.5">
+                ({sortedItems.length})
+              </span>
+            </h1>
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className="md:hidden flex items-center justify-center w-8 h-8 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-all"
+            >
+              <SlidersHorizontal size={16} />
+            </button>
+          </div>
 
-        {/* Categories Quick Filter - Compact Cards */}
-        <div className="mb-3">
-          <div className="overflow-x-auto hide-scrollbar">
-            <div className="flex gap-2 pb-2">
-              {/* All Categories */}
-              <button
-                onClick={() => {
-                  setSelectedCategory(null);
-                  setSelectedSubcategory(null);
-                }}
-                className="flex-shrink-0 flex items-center gap-2 px-3 py-2 rounded-xl transition-all bg-white text-gray-700 hover:bg-gray-50 border border-gray-200"
-              >
-                <div className="w-6 h-6 rounded-lg flex items-center justify-center bg-gray-100">
-                  <ChevronRight size={14} className="text-gray-600" />
+          {/* Active Filters Display - Compact & Improved */}
+          {hasActiveFilters && (
+            <div className="mb-3 bg-white rounded-lg p-2 border border-gray-200 shadow-sm">
+              <div className="flex flex-wrap items-center gap-1.5">
+                <div className="flex items-center gap-1 text-xs text-gray-600 font-semibold">
+                  <SlidersHorizontal size={12} className="text-blue-600" />
+                  <span className="hidden md:inline">Active:</span>
                 </div>
-                <span className="text-xs font-bold">All</span>
-              </button>
+                
+                
 
-              {/* Category Cards with Images */}
-              {categories.map((category) => (
-                <button
-                  key={category.id}
-                  onClick={() => {
-                    setSelectedCategory(category.slug);
-                    setSelectedSubcategory(null);
-                  }}
-                  className={`flex-shrink-0 flex items-center gap-2 px-3 py-2 rounded-xl transition-all ${
-                    selectedCategory === category.slug
-                      ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md'
-                      : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200'
-                  }`}
-                >
-                  <div className={`w-6 h-6 rounded-lg flex items-center justify-center p-1 ${
-                    selectedCategory === category.slug ? 'bg-white/20' : 'bg-gray-100'
-                  }`}>
-                    <img
-                      src={imageMap[category.image]}
-                      alt={category.name}
-                      className="w-full h-full object-contain"
-                    />
-                  </div>
-                  <span className="text-xs font-bold">{category.name}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Subcategories Pills */}
-        {subcategories.length > 0 && (
-          <div className="mb-3">
-            <div className="overflow-x-auto hide-scrollbar">
-              <div className="flex gap-1.5 pb-2">
-                {subcategories.map((subcat, index) => (
-                  <button
-                    key={index}
-                    onClick={() => setSelectedSubcategory(selectedSubcategory === subcat.name ? null : subcat.name)}
-                    className={`flex-shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-lg transition-all text-xs font-semibold ${
-                      selectedSubcategory === subcat.name
-                        ? 'bg-blue-600 text-white shadow-sm'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
+                {budgetFilter && (
+                  <span
+                    onClick={() => setBudgetFilter(null)}
+                    className="flex items-center gap-1 px-2 py-0.5 bg-green-100 text-green-700 rounded-md text-[10px] font-bold hover:bg-green-200 transition cursor-pointer"
                   >
-                    <span className="text-sm">{subcat.icon}</span>
-                    <span className="text-[11px]">{subcat.name}</span>
-                  </button>
-                ))}
+                    {budgetFilter}
+                    <X size={10} />
+                  </span>
+                )}
+                
+                {location && (
+                  <span
+                    onClick={() => setLocation('')}
+                    className="flex items-center gap-1 px-2 py-0.5 bg-orange-100 text-orange-700 rounded-md text-[10px] font-bold hover:bg-orange-200 transition cursor-pointer"
+                  >
+                    {location}
+                    <X size={10} />
+                  </span>
+                )}
+                
+                {minRating > 0 && (
+                  <span
+                    onClick={() => setMinRating(0)}
+                    className="flex items-center gap-1 px-2 py-0.5 bg-pink-100 text-pink-700 rounded-md text-[10px] font-bold hover:bg-pink-200 transition cursor-pointer"
+                  >
+                    {minRating}★+
+                    <X size={10} />
+                  </span>
+                )}
+                
+                <button
+                  onClick={clearFilters}
+                  className="ml-auto px-2 py-0.5 bg-red-100 text-red-700 rounded-md text-[10px] font-bold hover:bg-red-200 transition"
+                >
+                  Clear
+                </button>
               </div>
             </div>
-          </div>
-        )}
-
-        {/* Active Filters Display - Compact & Improved */}
-        {hasActiveFilters && (
-          <div className="mb-3 bg-white rounded-lg p-2 border border-gray-200 shadow-sm">
-            <div className="flex flex-wrap items-center gap-1.5">
-              <div className="flex items-center gap-1 text-xs text-gray-600 font-semibold">
-                <SlidersHorizontal size={12} className="text-blue-600" />
-                <span className="hidden md:inline">Active:</span>
-              </div>
-              
-              {selectedCategory && (
-                <span
-                  onClick={() => setSelectedCategory(null)}
-                  className="flex items-center gap-1 px-2 py-0.5 bg-blue-100 text-blue-700 rounded-md text-[10px] font-bold hover:bg-blue-200 transition cursor-pointer"
-                >
-                  {categories.find(c => c.slug === selectedCategory)?.name}
-                  <X size={10} />
-                </span>
-              )}
-              
-              {selectedSubcategory && (
-                <span
-                  onClick={() => setSelectedSubcategory(null)}
-                  className="flex items-center gap-1 px-2 py-0.5 bg-purple-100 text-purple-700 rounded-md text-[10px] font-bold hover:bg-purple-200 transition cursor-pointer"
-                >
-                  {selectedSubcategory}
-                  <X size={10} />
-                </span>
-              )}
-
-              {budgetFilter && (
-                <span
-                  onClick={() => setBudgetFilter(null)}
-                  className="flex items-center gap-1 px-2 py-0.5 bg-green-100 text-green-700 rounded-md text-[10px] font-bold hover:bg-green-200 transition cursor-pointer"
-                >
-                  {budgetFilter}
-                  <X size={10} />
-                </span>
-              )}
-              
-              {location && (
-                <span
-                  onClick={() => setLocation('')}
-                  className="flex items-center gap-1 px-2 py-0.5 bg-orange-100 text-orange-700 rounded-md text-[10px] font-bold hover:bg-orange-200 transition cursor-pointer"
-                >
-                  {location}
-                  <X size={10} />
-                </span>
-              )}
-              
-              {conditionFilter !== 'all' && (
-                <span
-                  onClick={() => setConditionFilter('all')}
-                  className="flex items-center gap-1 px-2 py-0.5 bg-yellow-100 text-yellow-700 rounded-md text-[10px] font-bold hover:bg-yellow-200 transition cursor-pointer"
-                >
-                  {conditionFilter}
-                  <X size={10} />
-                </span>
-              )}
-              
-              {minRating > 0 && (
-                <span
-                  onClick={() => setMinRating(0)}
-                  className="flex items-center gap-1 px-2 py-0.5 bg-pink-100 text-pink-700 rounded-md text-[10px] font-bold hover:bg-pink-200 transition cursor-pointer"
-                >
-                  {minRating}★+
-                  <X size={10} />
-                </span>
-              )}
-              
-              <button
-                onClick={clearFilters}
-                className="ml-auto px-2 py-0.5 bg-red-100 text-red-700 rounded-md text-[10px] font-bold hover:bg-red-200 transition"
-              >
-                Clear
-              </button>
-            </div>
-          </div>
-        )}
+          )}
+        </div>
 
         <div className="flex flex-col md:flex-row gap-6">
           {/* Mobile Filter Drawer */}
           {showFilters && (
             <div className="md:hidden fixed inset-0 z-50">
               <div className="absolute inset-0 bg-black/50" onClick={() => setShowFilters(false)}></div>
-              <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-2xl shadow-2xl max-h-[75vh] overflow-y-auto">
+              {/* White background strip to match navigation bar */}
+              <div className="absolute bottom-0 left-0 right-0 h-24 bg-white"></div>
+              <div className="absolute bottom-24 left-0 right-0 bg-white rounded-t-2xl shadow-2xl max-h-[75vh] overflow-y-auto">
                 <div className="sticky top-0 bg-white border-b border-gray-200 px-4 py-2.5 flex items-center justify-between z-10">
                   <h2 className="font-bold text-base">Filters</h2>
                   <button onClick={() => setShowFilters(false)} className="w-7 h-7 flex items-center justify-center rounded-lg bg-gray-100 hover:bg-gray-200">
@@ -441,43 +282,6 @@ const Listings = () => {
                         onChange={(e) => setLocation(e.target.value)}
                         className="w-full pl-7 pr-2 py-1 border border-gray-300 rounded text-xs"
                       />
-                    </div>
-                  </div>
-
-                  {/* Condition */}
-                  <div>
-                    <h3 className="font-bold text-xs mb-1.5 text-gray-800">Condition</h3>
-                    <select
-                      value={conditionFilter}
-                      onChange={(e) => setConditionFilter(e.target.value)}
-                      className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
-                    >
-                      <option value="all">All</option>
-                      <option value="new">New</option>
-                      <option value="excellent">Excellent</option>
-                      <option value="good">Good</option>
-                      <option value="fair">Fair</option>
-                    </select>
-                  </div>
-
-                  {/* Rating */}
-                  <div>
-                    <h3 className="font-bold text-xs mb-1.5 text-gray-800">Rating</h3>
-                    <div className="grid grid-cols-2 gap-1.5">
-                      {[4, 3, 2, 1].map((rating) => (
-                        <button
-                          key={rating}
-                          onClick={() => setMinRating(minRating === rating ? 0 : rating)}
-                          className={`flex items-center justify-center gap-0.5 px-2 py-1 rounded text-[10px] font-bold transition ${
-                            minRating === rating
-                              ? 'bg-blue-600 text-white'
-                              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                          }`}
-                        >
-                          <StarRating rating={rating} size={10} />
-                          <span>+</span>
-                        </button>
-                      ))}
                     </div>
                   </div>
 
@@ -545,21 +349,6 @@ const Listings = () => {
                 </div>
               </div>
 
-              {/* Condition */}
-              <div className="mb-3">
-                <h3 className="font-bold text-xs mb-1.5 text-gray-800">Condition</h3>
-                <select
-                  value={conditionFilter}
-                  onChange={(e) => setConditionFilter(e.target.value)}
-                  className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
-                >
-                  <option value="all">All</option>
-                  <option value="new">New</option>
-                  <option value="excellent">Excellent</option>
-                  <option value="good">Good</option>
-                  <option value="fair">Fair</option>
-                </select>
-              </div>
 
               {/* Rating */}
               <div>
@@ -620,7 +409,7 @@ const Listings = () => {
                 {sortedItems.map((item) => (
                   <div
                     key={item.id}
-                    onClick={() => handleItemClick(item.id)}
+                    onClick={() => handleItemClick(item)}
                     className="relative bg-white rounded-2xl overflow-hidden cursor-pointer premium-card animate-slide-up border border-gray-100"
                   >
                     {/* Favorite Button */}
@@ -638,11 +427,17 @@ const Listings = () => {
 
                     {/* Image */}
                     <div className="aspect-video bg-gray-100 overflow-hidden">
-                      <img
-                        src={item.images[0]}
-                        alt={item.title}
-                        className="w-full h-full object-cover transition-transform duration-500"
-                      />
+                      {item.images && item.images.length > 0 ? (
+                        <ImageCarousel 
+                          images={item.images} 
+                          video={item.video}
+                          className="w-full h-full"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-gray-200">
+                          <span className="text-gray-400 text-sm">No Image</span>
+                        </div>
+                      )}
                     </div>
 
                     {/* Content */}
@@ -675,7 +470,8 @@ const Listings = () => {
 
                       <div className="flex items-center justify-between mb-2 sm:mb-3">
                         <span className="text-base sm:text-xl md:text-2xl font-bold text-blue-600">
-                          ${item.price.toLocaleString()}
+                          ₹{(item.pricePerDay || item.price || 0).toLocaleString()}
+                          {item.isFeatured && <span className="text-xs text-orange-500 ml-1">/day</span>}
                         </span>
                       </div>
 

@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../../contexts/AppContext';
 import { MapPin, Heart, Clock, ChevronRight } from 'lucide-react';
 import ImageCarousel from '../common/ImageCarousel';
+import { RecentlyViewedSkeleton } from '../common/SkeletonLoader';
 
-const RecentlyViewed = () => {
+const RecentlyViewed = memo(() => {
   const { getRecentlyViewedItems, toggleFavorite, isFavorite, setSelectedCategory } = useApp();
   const navigate = useNavigate();
   const [animatingHeart, setAnimatingHeart] = useState(null);
@@ -109,7 +110,9 @@ const RecentlyViewed = () => {
       </div>
     </div>
   );
-};
+});
+
+RecentlyViewed.displayName = 'RecentlyViewed';
 
 export default RecentlyViewed;
 

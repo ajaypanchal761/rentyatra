@@ -2,38 +2,21 @@ import { useNavigate } from 'react-router-dom';
 import { useApp } from '../../contexts/AppContext';
 import { useCategories } from '../../contexts/CategoryContext';
 import { ChevronRight } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, memo } from 'react';
 import AdBanner from './AdBanner';
-import apiService from '../../services/api';
+import { ProductGridSkeleton } from '../common/SkeletonLoader';
+import { useHeroData } from '../../hooks/useHeroData';
 
-const CategoryGrid = () => {
+const CategoryGrid = memo(() => {
   const { setSelectedCategory } = useApp();
   const { categories, fetchCategoriesByProduct, loading: categoriesLoading } = useCategories();
   const navigate = useNavigate();
   
-  // State for products
-  const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  // Fetch products from backend
-  useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const response = await apiService.getFeaturedProducts(12); // Get 12 products for 6x2 grid
-        setProducts(response.data.products || []);
-      } catch (err) {
-        console.error('Error fetching products:', err);
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchProducts();
-  }, []);
+  // Use optimized hero data hook
+  const { data, loading, errors } = useHeroData();
+  const { featuredProducts: products } = data;
+  const { featuredProducts: productsLoading } = loading;
+  const { featuredProducts: productsError } = errors;
 
   const handleProductClick = async (product) => {
     try {
@@ -94,18 +77,11 @@ const CategoryGrid = () => {
             </button>
           </div>
           
-          {loading ? (
-            <div className="grid grid-cols-8 gap-2 lg:gap-3">
-              {[...Array(12)].map((_, index) => (
-                <div key={index} className="animate-pulse">
-                  <div className="w-full aspect-square bg-gray-200 rounded-lg mb-2"></div>
-                  <div className="h-3 bg-gray-200 rounded w-3/4 mx-auto"></div>
-                </div>
-              ))}
-            </div>
-          ) : error ? (
+          {productsLoading ? (
+            <ProductGridSkeleton count={12} isMobile={false} />
+          ) : productsError ? (
             <div className="text-center py-8">
-              <p className="text-red-500 mb-4">Error loading products: {error}</p>
+              <p className="text-red-500 mb-4">Error loading products: {productsError}</p>
               <button 
                 onClick={() => window.location.reload()} 
                 className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
@@ -161,26 +137,9 @@ const CategoryGrid = () => {
 
         {/* Mobile Grid - 6x2 Grid with horizontal scroll */}
         <div className="md:hidden overflow-x-auto hide-scrollbar">
-          {loading ? (
-            <div 
-              className="grid grid-rows-2 auto-cols-max gap-x-2 gap-y-2 pb-2" 
-              style={{ 
-                gridAutoFlow: 'column',
-                width: 'max-content'
-              }}
-            >
-              {[...Array(12)].map((_, index) => (
-                <div key={index} className="animate-pulse" style={{ width: '70px' }}>
-                  <div className="w-full h-[65px] bg-gray-200 rounded-lg mb-1"></div>
-                  <div className="h-2 bg-gray-200 rounded w-3/4 mx-auto"></div>
-                </div>
-              ))}
-              {/* See All Card Skeleton */}
-              <div className="animate-pulse" style={{ width: '70px', gridRow: 'span 2' }}>
-                <div className="w-full h-full bg-gray-200 rounded-lg"></div>
-              </div>
-            </div>
-          ) : error ? (
+          {productsLoading ? (
+            <ProductGridSkeleton count={12} isMobile={true} />
+          ) : productsError ? (
             <div className="text-center py-4">
               <p className="text-red-500 text-sm mb-2">Error loading products</p>
               <button 
@@ -261,6 +220,8 @@ const CategoryGrid = () => {
       </div>
     </div>
   );
-};
+});
+
+CategoryGrid.displayName = 'CategoryGrid';
 
 export default CategoryGrid;
