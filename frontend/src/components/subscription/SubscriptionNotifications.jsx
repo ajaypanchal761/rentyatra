@@ -6,6 +6,7 @@ import SubscriptionContext from '../../contexts/SubscriptionContext';
 const SubscriptionNotifications = () => {
   const navigate = useNavigate();
   const context = useContext(SubscriptionContext);
+  const [dismissedNotifications, setDismissedNotifications] = useState([]);
   
   // If context is not available, don't render anything
   if (!context) {
@@ -13,7 +14,6 @@ const SubscriptionNotifications = () => {
   }
   
   const { userSubscription, userBoosts, hasActiveSubscription } = context;
-  const [dismissedNotifications, setDismissedNotifications] = useState([]);
 
   const getDaysRemaining = (endDate) => {
     const end = new Date(endDate);

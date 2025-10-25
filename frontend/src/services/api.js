@@ -35,6 +35,13 @@ class ApiService {
     }
   }
 
+  // Refresh token from localStorage
+  refreshToken() {
+    const token = localStorage.getItem('token');
+    this.token = token;
+    return token;
+  }
+
   // Set admin authentication token
   setAdminToken(token) {
     this.adminToken = token;
@@ -72,8 +79,16 @@ class ApiService {
       'Content-Type': 'application/json',
     };
 
-    if (this.token) {
-      headers.Authorization = `Bearer ${this.token}`;
+    // Get fresh token from localStorage
+    const token = localStorage.getItem('token');
+    console.log('🔑 Token from localStorage:', token);
+    console.log('🔑 Token from instance:', this.token);
+    
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+      console.log('🔑 Authorization header set:', headers.Authorization);
+    } else {
+      console.warn('⚠️ No token found in localStorage');
     }
 
     return headers;
@@ -98,8 +113,14 @@ class ApiService {
 
     // Get fresh admin token from localStorage
     const adminToken = localStorage.getItem('adminToken');
+    console.log('🔐 Admin token from localStorage:', adminToken ? 'Found' : 'Not found');
+    console.log('🔐 Admin token value:', adminToken);
+    
     if (adminToken) {
       headers.Authorization = `Bearer ${adminToken}`;
+      console.log('🔐 Admin headers with token:', headers);
+    } else {
+      console.warn('⚠️ No admin token found in localStorage');
     }
 
     return headers;
@@ -1998,6 +2019,106 @@ class ApiService {
     return this.request(endpoint, {
       method: 'DELETE'
     });
+  }
+
+  // Admin-specific request method for ticket operations
+  async adminRequest(endpoint, options = {}) {
+    const url = `${this.baseURL}${endpoint}`;
+    const config = {
+      headers: this.getAdminHeaders(),
+      ...options,
+    };
+
+    console.log('🌐 Making Admin API request to:', url);
+    console.log('📋 Admin Request config:', config);
+
+    try {
+      const response = await fetch(url, config);
+      
+      console.log('📡 Admin Response status:', response.status);
+      
+      if (!response.ok) {
+        let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorMessage;
+        } catch (jsonError) {
+          console.warn('Could not parse error response as JSON');
+        }
+        
+        // Check if it's an authentication error
+        if (response.status === 401 || response.status === 403) {
+          console.warn('🔐 Authentication failed, admin token may be invalid or expired');
+          // Don't throw the error, return a special response instead
+          return {
+            success: false,
+            error: 'Authentication failed',
+            message: errorMessage,
+            requiresAuth: true
+          };
+        }
+        
+        throw new Error(errorMessage);
+      }
+
+      const data = await response.json();
+      console.log('✅ Admin API Response:', data);
+      return data;
+    } catch (error) {
+      console.error('❌ Admin API Request Error:', error);
+      // Return a structured error response instead of throwing
+      return {
+        success: false,
+        error: error.message,
+        requiresAuth: true
+      };
+    }
+  }
+
+  // Admin ticket operations
+  async updateTicketStatus(ticketId, status) {
+    return this.adminRequest(`/tickets/${ticketId}/status`, {
+      method: 'PUT',
+      body: JSON.stringify({ status })
+    });
+  }
+
+  async updateTicketAdminNotes(ticketId, adminNotes) {
+    return this.adminRequest(`/tickets/${ticketId}/admin-notes`, {
+      method: 'PUT',
+      body: JSON.stringify({ adminNotes })
+    });
+  }
+
+  // New comprehensive admin update endpoint
+  async adminUpdateTicket(ticketId, updateData) {
+    return this.adminRequest(`/tickets/${ticketId}/admin-update`, {
+      method: 'PUT',
+      body: JSON.stringify(updateData)
+    });
+  }
+
+  // Add resolution notes specifically
+  async addResolutionNotes(ticketId, resolutionNotes) {
+    return this.adminRequest(`/tickets/${ticketId}/resolution-notes`, {
+      method: 'PUT',
+      body: JSON.stringify({ resolutionNotes })
+    });
+  }
+
+  async getTickets(filters = {}) {
+    const params = new URLSearchParams();
+    Object.keys(filters).forEach(key => {
+      if (filters[key] !== undefined && filters[key] !== null) {
+        params.append(key, filters[key]);
+      }
+    });
+    
+    return this.adminRequest(`/tickets?${params.toString()}`);
+  }
+
+  async getTicket(ticketId) {
+    return this.adminRequest(`/tickets/${ticketId}`);
   }
 }
 

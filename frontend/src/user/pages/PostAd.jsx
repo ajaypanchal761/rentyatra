@@ -4,6 +4,7 @@ import { Upload, X, MapPin, ArrowLeft, ArrowRight, Check, ChevronRight, Search, 
 import { useApp } from '../../contexts/AppContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCategories } from '../../contexts/CategoryContext';
+import { useSubscription } from '../../contexts/SubscriptionContext';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import apiService from '../../services/api';
@@ -12,6 +13,7 @@ const PostAd = () => {
   const { addItem } = useApp();
   const { categories, imageMap, loading: categoriesLoading } = useCategories();
   const { isAuthenticated, user } = useAuth();
+  const { refreshUserSubscription } = useSubscription();
   const navigate = useNavigate();
 
   // Multi-step state
@@ -459,6 +461,12 @@ const PostAd = () => {
       const response = await apiService.createRentalListing(formDataToSend);
 
       if (response.success) {
+        // Refresh subscription data to update counters
+        if (user?.id || user?._id) {
+          const userId = user.id || user._id;
+          await refreshUserSubscription(userId);
+        }
+        
         // Show success message
         setError(''); // Clear any previous errors
         // Show success notification

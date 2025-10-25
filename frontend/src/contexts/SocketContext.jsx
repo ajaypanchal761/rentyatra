@@ -19,11 +19,32 @@ export const SocketProvider = ({ children }) => {
 
   useEffect(() => {
     if (isAuthenticated && user) {
-      // For now, disable Socket.io due to namespace issues
-      // Chat will work with REST API only
-      console.log('Socket.io disabled - using REST API only mode');
-      setIsConnected(false);
-      setSocket(null);
+      // Enable Socket.io for real-time updates
+      console.log('🔌 Connecting to Socket.io for real-time updates...');
+      const newSocket = io('http://localhost:5000', {
+        transports: ['websocket', 'polling']
+      });
+
+      newSocket.on('connect', () => {
+        console.log('✅ Socket.io connected:', newSocket.id);
+        setIsConnected(true);
+      });
+
+      newSocket.on('disconnect', () => {
+        console.log('❌ Socket.io disconnected');
+        setIsConnected(false);
+      });
+
+      newSocket.on('connect_error', (error) => {
+        console.log('❌ Socket.io connection error:', error);
+        setIsConnected(false);
+      });
+
+      setSocket(newSocket);
+
+      return () => {
+        newSocket.close();
+      };
     } else {
       // Disconnect if user is not authenticated
       if (socket) {
@@ -72,6 +93,14 @@ export const SocketProvider = ({ children }) => {
     }
   };
 
+  const listenForTicketUpdates = (callback) => {
+    if (socket && isConnected) {
+      socket.on('ticketStatusUpdated', callback);
+      return () => socket.off('ticketStatusUpdated', callback);
+    }
+    return () => {};
+  };
+
   const value = {
     socket,
     isConnected,
@@ -80,7 +109,8 @@ export const SocketProvider = ({ children }) => {
     sendMessage,
     markMessageAsRead,
     startTyping,
-    stopTyping
+    stopTyping,
+    listenForTicketUpdates
   };
 
   return (

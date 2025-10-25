@@ -64,8 +64,12 @@ import Favorites from './user/pages/Favorites';
 import SubscriptionPage from './user/pages/subscription/SubscriptionPage';
 import MySubscription from './user/pages/subscription/MySubscription';
 import MyBoosts from './user/pages/subscription/MyBoosts';
-import PaymentSuccess from './user/pages/subscription/PaymentSuccess';
 import PaymentFailed from './user/pages/subscription/PaymentFailed';
+import FAQs from './user/pages/FAQs';
+import SupportTicket from './user/pages/SupportTicket';
+import PrivacyPolicy from './user/pages/PrivacyPolicy';
+import TermsAndConditions from './user/pages/TermsAndConditions';
+import AboutUs from './user/pages/AboutUs';
 import AdminDashboard from './admin/pages/AdminDashboard';
 import AdminLogin from './admin/pages/AdminLogin';
 import AdminSignup from './admin/pages/AdminSignup';
@@ -75,8 +79,23 @@ import ProtectedAdminRoute from './admin/components/ProtectedAdminRoute';
 function AppContent() {
   const location = useLocation();
   const isAdminPage = location.pathname.startsWith('/admin');
+  
+  const hideNavbar = location.pathname.startsWith('/category');
+  const hideFooter = location.pathname === '/' || location.pathname.startsWith('/category');
+  
+  // Hide navbars on auth pages, dashboard, and chat pages
+  const isAuthPage = location.pathname === '/login' || location.pathname === '/signup';
+  const isDashboardPage = location.pathname.startsWith('/dashboard') || location.pathname === '/favorites' || location.pathname === '/bookings' || location.pathname === '/messages';
+  const isChatPage = location.pathname.startsWith('/chat');
+  
+  // Hide navbar and footer completely on auth pages and chat pages
+  const shouldHideNavbar = hideNavbar || isAuthPage || isChatPage;
+  const shouldHideFooter = hideFooter || isAuthPage || isChatPage;
+  
+  // Bottom navigation should be visible on all user pages except auth pages and chat pages
+  const shouldShowBottomNav = !isAuthPage && !isChatPage;
 
-  // Admin pages - still need context but no navbar/footer
+  // Admin pages - no navbar/footer but still need context
   if (isAdminPage) {
     return (
       <main>
@@ -100,21 +119,6 @@ function AppContent() {
       </main>
     );
   }
-  
-  const hideNavbar = location.pathname.startsWith('/category');
-  const hideFooter = location.pathname === '/' || location.pathname.startsWith('/category');
-  
-  // Hide navbars on auth pages, dashboard, and chat pages
-  const isAuthPage = location.pathname === '/login' || location.pathname === '/signup';
-  const isDashboardPage = location.pathname.startsWith('/dashboard') || location.pathname === '/favorites' || location.pathname === '/bookings' || location.pathname === '/messages';
-  const isChatPage = location.pathname.startsWith('/chat');
-  
-  // Hide navbar and footer completely on auth pages and chat pages
-  const shouldHideNavbar = hideNavbar || isAuthPage || isChatPage;
-  const shouldHideFooter = hideFooter || isAuthPage || isChatPage;
-  
-  // Bottom navigation should be visible on all user pages except auth pages and chat pages
-  const shouldShowBottomNav = !isAuthPage && !isChatPage;
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -149,8 +153,12 @@ function AppContent() {
           <Route path="/subscription" element={<SubscriptionPage />} />
           <Route path="/my-subscription" element={<MySubscription />} />
           <Route path="/my-boosts" element={<MyBoosts />} />
-          <Route path="/subscription/success" element={<PaymentSuccess />} />
           <Route path="/subscription/failed" element={<PaymentFailed />} />
+          <Route path="/faqs" element={<FAQs />} />
+          <Route path="/support-ticket" element={<SupportTicket />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+          <Route path="/terms-and-conditions" element={<TermsAndConditions />} />
+          <Route path="/about-us" element={<AboutUs />} />
           
           {/* Catch-all route for 404 */}
           <Route path="*" element={<div className="flex items-center justify-center min-h-screen"><h1 className="text-2xl font-bold">Page Not Found</h1></div>} />

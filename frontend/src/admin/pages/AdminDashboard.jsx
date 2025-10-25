@@ -9,6 +9,8 @@ import BannerManagementView from '../components/views/BannerManagementView';
 import RentalListingManagementView from '../components/views/RentalListingManagementView';
 import AdminProfileView from '../components/views/AdminProfileView';
 import AdminSettingsView from '../components/views/AdminSettingsView';
+import SubscriptionManagementView from '../components/views/SubscriptionManagementView';
+import SupportManagementView from '../components/views/SupportManagementView';
 
 // Simple placeholder component for other sections
 function PlaceholderView({ title }) {
@@ -44,13 +46,15 @@ export default function AdminDashboard() {
             case 'Rental listing':
                 return <RentalListingManagementView />;
             case 'Subscriptions':
-                return <PlaceholderView title="Subscription Management" />;
+                return <SubscriptionManagementView />;
             case 'Boosts':
                 return <PlaceholderView title="Boost Management" />;
             case 'Payments':
                 return <PlaceholderView title="Payment Management" />;
             case 'Ad Banners':
                 return <BannerManagementView />;
+            case 'Support':
+                return <SupportManagementView />;
             case 'Notifications':
                 return <PlaceholderView title="Notification Management" />;
             case 'Referrals':

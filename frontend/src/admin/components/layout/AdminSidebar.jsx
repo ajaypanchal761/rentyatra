@@ -10,7 +10,8 @@ import {
   Bell, 
   UserPlus,
   Settings,
-  FileText
+  FileText,
+  HelpCircle
 } from 'lucide-react';
 
 function AdminSidebar({ activePage, setActivePage }) {
@@ -24,6 +25,7 @@ function AdminSidebar({ activePage, setActivePage }) {
     { name: 'Boosts', icon: Zap },
     { name: 'Payments', icon: DollarSign },
     { name: 'Ad Banners', icon: Image },
+    { name: 'Support', icon: HelpCircle },
     { name: 'Notifications', icon: Bell },
     { name: 'Referrals', icon: UserPlus },
   ];

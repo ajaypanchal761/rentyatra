@@ -2,34 +2,41 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSubscription } from '../../contexts/SubscriptionContext';
 import PlanCard from './PlanCard';
-import { Sparkles, TrendingUp } from 'lucide-react';
+import PlanSummaryModal from './PlanSummaryModal';
+import { TrendingUp, ArrowLeft } from 'lucide-react';
 
 const SubscriptionPlans = ({ onSelectPlan }) => {
   const { subscriptionPlans, subscribeToPlan, loading } = useSubscription();
   const navigate = useNavigate();
   const [selectedPlan, setSelectedPlan] = useState(null);
+  const [showSummaryModal, setShowSummaryModal] = useState(false);
 
   const handleSelectPlan = async (planId) => {
-    setSelectedPlan(planId);
-    
-    if (onSelectPlan) {
-      // If callback provided, use it (for modal flow)
-      onSelectPlan(planId);
-    } else {
-      // Otherwise, subscribe directly (for dedicated page)
-      const result = await subscribeToPlan(planId);
-      
-      if (result.success) {
-        navigate('/subscription/success');
-      } else {
-        alert('Failed to subscribe. Please try again.');
-      }
-    }
+    const plan = subscriptionPlans.find(p => p.id === planId);
+    setSelectedPlan(plan);
+    setShowSummaryModal(true);
+  };
+
+  const handlePayNow = async (plan) => {
+    // Payment is now handled in PlanSummaryModal
+    // This function is no longer needed but kept for compatibility
+    setShowSummaryModal(false);
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-purple-50 py-6 md:py-12 px-4">
       <div className="max-w-7xl mx-auto">
+        {/* Back Button */}
+        <div className="mb-4 md:mb-6">
+          <button
+            onClick={() => navigate(-1)}
+            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors duration-200"
+          >
+            <ArrowLeft size={20} />
+            <span className="text-sm font-medium">Back</span>
+          </button>
+        </div>
+
         {/* Header Section */}
         <div className="text-center mb-6 md:mb-12">
           <div className="inline-flex items-center gap-2 bg-blue-100 text-blue-600 px-3 py-1.5 md:px-4 md:py-2 rounded-full mb-3 md:mb-4">
@@ -82,65 +89,24 @@ const SubscriptionPlans = ({ onSelectPlan }) => {
           </div>
         </div>
 
-        {/* Benefits Section */}
-        <div className="bg-white rounded-xl md:rounded-2xl shadow-xl p-6 md:p-8 lg:p-12">
-          <div className="flex items-center justify-center gap-2 md:gap-3 mb-6 md:mb-8">
-            <Sparkles className="text-yellow-500" size={20} fill="currentColor" />
-            <h2 className="text-xl md:text-2xl lg:text-3xl font-black text-gray-900">
-              Why Choose RentYatra?
-            </h2>
-            <Sparkles className="text-yellow-500" size={20} fill="currentColor" />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
-            <div className="text-center">
-              <div className="w-12 h-12 md:w-16 md:h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl md:rounded-2xl flex items-center justify-center mx-auto mb-3 md:mb-4 shadow-lg">
-                <span className="text-2xl md:text-3xl">🚀</span>
-              </div>
-              <h3 className="text-base md:text-xl font-bold text-gray-900 mb-2">
-                Quick Setup
-              </h3>
-              <p className="text-sm md:text-base text-gray-600">
-                List your products in minutes and start earning right away
-              </p>
-            </div>
-
-            <div className="text-center">
-              <div className="w-12 h-12 md:w-16 md:h-16 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl md:rounded-2xl flex items-center justify-center mx-auto mb-3 md:mb-4 shadow-lg">
-                <span className="text-2xl md:text-3xl">🔒</span>
-              </div>
-              <h3 className="text-base md:text-xl font-bold text-gray-900 mb-2">
-                Secure Payments
-              </h3>
-              <p className="text-sm md:text-base text-gray-600">
-                100% secure transactions with instant payment processing
-              </p>
-            </div>
-
-            <div className="text-center">
-              <div className="w-12 h-12 md:w-16 md:h-16 bg-gradient-to-br from-yellow-500 to-orange-600 rounded-xl md:rounded-2xl flex items-center justify-center mx-auto mb-3 md:mb-4 shadow-lg">
-                <span className="text-2xl md:text-3xl">💰</span>
-              </div>
-              <h3 className="text-base md:text-xl font-bold text-gray-900 mb-2">
-                Earn More
-              </h3>
-              <p className="text-sm md:text-base text-gray-600">
-                Reach thousands of customers and maximize your earnings
-              </p>
-            </div>
-          </div>
-        </div>
-
         {/* FAQ or Additional Info */}
         <div className="mt-8 md:mt-12 text-center px-2">
           <p className="text-sm md:text-base text-gray-600 mb-3 md:mb-4">
-            All plans include secure payments, insurance coverage, and 24/7 customer support
+            All plans include secure payments, Safety Use, and 24/7 Customer support
           </p>
           <p className="text-xs md:text-sm text-gray-500">
-            Cancel anytime • No hidden fees • Money-back guarantee
+            GST Charges will apply • No hidden fees • Safe and Secure
           </p>
         </div>
       </div>
+
+      {/* Plan Summary Modal */}
+      <PlanSummaryModal
+        isOpen={showSummaryModal}
+        onClose={() => setShowSummaryModal(false)}
+        plan={selectedPlan}
+        onPayNow={handlePayNow}
+      />
     </div>
   );
 };

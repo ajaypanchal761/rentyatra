@@ -1,93 +1,118 @@
 import { createContext, useContext, useState, useEffect } from 'react';
+import planService from '../services/planService';
+import apiService from '../services/api';
 
-const SubscriptionContext = createContext(null);
+const SubscriptionContext = createContext(undefined);
 
 export const useSubscription = () => {
   const context = useContext(SubscriptionContext);
-  if (context === null) {
+  if (context === undefined) {
     throw new Error('useSubscription must be used within SubscriptionProvider');
   }
   return context;
 };
 
 export const SubscriptionProvider = ({ children }) => {
-  // Subscription Plans (Mock Data - will come from API later)
-  const subscriptionPlans = [
-    {
-      id: 'starter',
-      name: 'Starter',
-      price: 999,
-      duration: 30,
-      features: [
-        'Up to 3 Listings',
-        'Basic Support',
-        '3 Photos per listing',
-        'Valid for 30 Days',
-        'Email notifications'
-      ],
-      maxListings: 3,
-      maxPhotos: 3,
-      gradient: 'from-gray-400 to-gray-500',
-      popular: false
-    },
-    {
-      id: 'basic',
-      name: 'Basic',
-      price: 2499,
-      duration: 60,
-      features: [
-        'Up to 10 Listings',
-        'Priority Support',
-        '5 Photos per listing',
-        'Valid for 60 Days',
-        'Analytics Dashboard',
-        'Featured Badge'
-      ],
-      maxListings: 10,
-      maxPhotos: 5,
-      gradient: 'from-blue-500 to-indigo-600',
-      popular: true
-    },
-    {
-      id: 'premium',
-      name: 'Premium',
-      price: 4999,
-      duration: 90,
-      features: [
-        'Up to 30 Listings',
-        'Priority Support 24/7',
-        '10 Photos per listing',
-        'Valid for 90 Days',
-        'Advanced Analytics',
-        'Featured Badge',
-        '10% Boost Discount'
-      ],
-      maxListings: 30,
-      maxPhotos: 10,
-      gradient: 'from-purple-500 to-pink-600',
-      popular: false
-    },
-    {
-      id: 'pro',
-      name: 'Pro',
-      price: 7999,
-      duration: 365,
-      features: [
-        'Unlimited Listings',
-        'Premium Support 24/7',
-        '15 Photos per listing',
-        'Valid for 365 Days',
-        'Advanced Analytics',
-        'Priority Badge',
-        '20% Boost Discount',
-        'API Access'
-      ],
-      maxListings: -1, // -1 means unlimited
-      maxPhotos: 15,
-      gradient: 'from-yellow-500 to-orange-600',
-      popular: false
-    }
-  ];
+  // Subscription Plans - loaded from service (same as admin)
+  const [subscriptionPlans, setSubscriptionPlans] = useState([]);
+
+  // Load plans on component mount
+  useEffect(() => {
+    const loadPlans = async () => {
+      try {
+        const plans = await planService.getAllPlans();
+        setSubscriptionPlans(plans);
+      } catch (error) {
+        console.error('Error loading plans:', error);
+        // Fallback to default plans if service fails
+        setSubscriptionPlans([
+          {
+            id: 'basic',
+            name: 'Basic Plan',
+            price: 100,
+            duration: 30,
+            features: [
+              '3 Post Ads',
+              '5 Time Boost',
+              'Basic Support',
+              'Valid for 30 Days',
+              'Email notifications'
+            ],
+            maxListings: 3,
+            maxBoosts: 5,
+            maxPhotos: 3,
+            gradient: 'from-gray-400 to-gray-500',
+            popular: false
+          },
+          {
+            id: 'premium',
+            name: 'Premium Plan',
+            price: 200,
+            duration: 30,
+            features: [
+              '5 Post Ads',
+              '10 Time Boost',
+              'Priority Support',
+              'Valid for 30 Days',
+              'Email notifications',
+              'Featured Badge'
+            ],
+            maxListings: 5,
+            maxBoosts: 10,
+            maxPhotos: 5,
+            gradient: 'from-blue-500 to-indigo-600',
+            popular: true
+          },
+          {
+            id: 'pro',
+            name: 'Pro Plan',
+            price: 300,
+            duration: 30,
+            features: [
+              '15 Post Ads',
+              '20 Time Boost',
+              'Priority Support 24/7',
+              'Valid for 30 Days',
+              'Email notifications',
+              'Featured Badge'
+            ],
+            maxListings: 15,
+            maxBoosts: 20,
+            maxPhotos: 10,
+            gradient: 'from-purple-500 to-pink-600',
+            popular: false
+          }
+        ]);
+      }
+    };
+    loadPlans();
+  }, []);
+
+  // Listen for storage changes (when admin updates plans)
+  useEffect(() => {
+    const handleStorageChange = () => {
+      const loadPlans = async () => {
+        try {
+          const plans = await planService.getAllPlans();
+          setSubscriptionPlans(plans);
+        } catch (error) {
+          console.error('Error reloading plans:', error);
+        }
+      };
+      loadPlans();
+    };
+
+    // Listen for localStorage changes
+    window.addEventListener('storage', handleStorageChange);
+    
+    // Also listen for custom events (for same-tab updates)
+    window.addEventListener('plansUpdated', handleStorageChange);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('plansUpdated', handleStorageChange);
+    };
+  }, []);
 
   // Boost Plans (Mock Data)
   const boostPlans = [
@@ -127,7 +152,7 @@ export const SubscriptionProvider = ({ children }) => {
     }
   ];
 
-  // User Subscription State (Mock - will come from API)
+  // User Subscription State
   const [userSubscription, setUserSubscription] = useState(null);
   
   // User Boosts State (Mock)
@@ -135,6 +160,96 @@ export const SubscriptionProvider = ({ children }) => {
 
   // Loading States
   const [loading, setLoading] = useState(false);
+
+  // Load user subscription from API
+  const loadUserSubscription = async (userId) => {
+    if (!userId) {
+      console.log('No userId provided to loadUserSubscription');
+      return;
+    }
+    
+    // Use relative path to leverage Vite proxy
+    const apiUrl = `/api/subscription/active/${userId}`;
+    console.log('Loading subscription for user:', userId, 'from:', apiUrl);
+    console.log('Environment VITE_API_URL:', import.meta.env.VITE_API_URL);
+    console.log('Final API URL:', apiUrl);
+    
+    try {
+      // Create AbortController for timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+      
+      const response = await fetch(apiUrl, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
+      
+      console.log('Response status:', response.status);
+      
+      if (!response.ok) {
+        if (response.status === 404) {
+          console.log('No active subscription found for user:', userId);
+          setUserSubscription(null);
+          return;
+        }
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('Subscription data received:', data);
+      
+      if (data.success && data.data) {
+        setUserSubscription(data.data);
+      } else {
+        setUserSubscription(null);
+      }
+    } catch (error) {
+      console.error('Error loading user subscription:', error);
+      
+      if (error.name === 'AbortError') {
+        console.log('Request timed out - server may be down');
+      } else if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+        console.log('Network error - server may be down or CORS issue');
+        console.log('Please ensure the backend server is running on port 5000');
+        
+        // Try to use mock data as fallback for development
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Using mock subscription data for development');
+          setUserSubscription({
+            _id: 'mock-subscription-id',
+            userId: { _id: userId, name: 'Mock User', email: 'mock@example.com' },
+            planId: 'basic',
+            planName: 'Basic Plan',
+            status: 'active',
+            startDate: new Date().toISOString(),
+            endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+            price: 944,
+            paymentStatus: 'paid',
+            currentListings: 0,
+            currentBoosts: 0,
+            maxListings: 5,
+            maxBoosts: 6,
+            maxPhotos: 3
+          });
+          return;
+        }
+      }
+      
+      console.log('Network error - keeping existing subscription state');
+      // Don't set userSubscription to null on network errors to preserve existing state
+    }
+  };
+
+  // Refresh user subscription data
+  const refreshUserSubscription = async (userId) => {
+    if (!userId) return;
+    await loadUserSubscription(userId);
+  };
 
   // Check if user has active subscription
   const hasActiveSubscription = () => {
@@ -173,54 +288,36 @@ export const SubscriptionProvider = ({ children }) => {
     return Math.max(0, plan.maxListings - currentListings);
   };
 
-  // Subscribe to a plan (Mock - will call API)
+  // Subscribe to a plan - this is now handled by payment flow
   const subscribeToPlan = async (planId) => {
-    setLoading(true);
-    try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      const plan = subscriptionPlans.find(p => p.id === planId);
-      const startDate = new Date();
-      const endDate = new Date();
-      endDate.setDate(endDate.getDate() + plan.duration);
-      
-      const newSubscription = {
-        id: `sub-${Date.now()}`,
-        userId: 'user-123',
-        planId: planId,
-        planName: plan.name,
-        status: 'active',
-        startDate: startDate.toISOString(),
-        endDate: endDate.toISOString(),
-        currentListings: 0,
-        autoRenew: true,
-        price: plan.price
-      };
-      
-      setUserSubscription(newSubscription);
-      return { success: true, subscription: newSubscription };
-    } catch (error) {
-      console.error('Subscribe error:', error);
-      return { success: false, error: error.message };
-    } finally {
-      setLoading(false);
-    }
+    // This method is now handled by the payment flow
+    // The subscription is created during payment process
+    return { success: true };
   };
 
   // Cancel subscription
   const cancelSubscription = async () => {
+    if (!userSubscription) {
+      return { success: false, error: 'No active subscription found' };
+    }
+
     setLoading(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      setUserSubscription(prev => ({
-        ...prev,
-        status: 'cancelled',
-        autoRenew: false
-      }));
-      
-      return { success: true };
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/subscription/cancel/${userSubscription._id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setUserSubscription(null);
+        return { success: true };
+      } else {
+        return { success: false, error: data.message };
+      }
     } catch (error) {
       console.error('Cancel error:', error);
       return { success: false, error: error.message };
@@ -322,6 +419,8 @@ export const SubscriptionProvider = ({ children }) => {
     getRemainingListings,
     subscribeToPlan,
     cancelSubscription,
+    loadUserSubscription,
+    refreshUserSubscription,
     
     // Boost Methods
     purchaseBoost,

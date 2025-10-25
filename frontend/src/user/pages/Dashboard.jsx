@@ -488,6 +488,11 @@ const Dashboard = () => {
       setSidebarOpen(false);
       return;
     }
+    if (tabId === 'buy-subscription') {
+      navigate('/subscription');
+      setSidebarOpen(false);
+      return;
+    }
     if (tabId === 'subscription') {
       navigate('/my-subscription');
       setSidebarOpen(false);
@@ -495,6 +500,36 @@ const Dashboard = () => {
     }
     if (tabId === 'boosts') {
       navigate('/my-boosts');
+      setSidebarOpen(false);
+      return;
+    }
+    if (tabId === 'faqs') {
+      navigate('/faqs');
+      setSidebarOpen(false);
+      return;
+    }
+    if (tabId === 'contact-us') {
+      navigate('/support-ticket');
+      setSidebarOpen(false);
+      return;
+    }
+    if (tabId === 'privacy') {
+      navigate('/privacy-policy');
+      setSidebarOpen(false);
+      return;
+    }
+    if (tabId === 'terms') {
+      navigate('/terms-and-conditions');
+      setSidebarOpen(false);
+      return;
+    }
+    if (tabId === 'about-us') {
+      navigate('/about-us');
+      setSidebarOpen(false);
+      return;
+    }
+    if (tabId === 'featured-ads') {
+      setActiveTab('my-ads');
       setSidebarOpen(false);
       return;
     }
@@ -1024,6 +1059,7 @@ const Dashboard = () => {
                   <div className="flex-1 min-w-0">
                     <h3 className="font-bold text-white truncate text-base">{user.name}</h3>
                     <p className="text-xs text-white/80 truncate">{user.phone || user.email}</p>
+                    <p className="text-xs text-white/60 truncate">USR{String(user._id || user.id || '00000').slice(-4).padStart(4, '0')}</p>
                   </div>
                 </div>
               </div>

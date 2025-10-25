@@ -38,7 +38,7 @@ const PlanCard = ({ plan, onSelect, loading, isPopular, isMobile = false }) => {
           } font-black`}>₹{price}</span>
           <span className={`${
             isMobile ? 'text-sm' : 'text-base md:text-lg'
-          } opacity-90`}>/month</span>
+          } opacity-90`}>one-time</span>
         </div>
       </div>
 

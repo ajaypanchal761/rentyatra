@@ -32,6 +32,9 @@ const bannerRoutes = require('./routes/bannerRoutes');
 const rentalRequestRoutes = require('./routes/rentalRequestRoutes');
 const reviewRoutes = require('./routes/reviewRoutes');
 const chatRoutes = require('./routes/chatRoutes');
+const paymentRoutes = require('./routes/paymentRoutes');
+const subscriptionRoutes = require('./routes/subscriptionRoutes');
+const ticketRoutes = require('./routes/ticketRoutes');
 
 const app = express();
 const server = http.createServer(app);
@@ -81,6 +84,9 @@ const io = socketIo(server, {
     methods: ["GET", "POST"]
   }
 });
+
+// Make io globally available for controllers
+global.io = io;
 
 // Socket.io connection handling
 io.on('connection', (socket) => {
@@ -223,6 +229,12 @@ app.use('/api/categories', publicCategoryRoutes);
 app.use('/api/rental-requests', publicRentalRequestRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/chat', chatRoutes);
+app.use('/api/payment', paymentRoutes);
+app.use('/api/subscription', subscriptionRoutes);
+app.use('/api/tickets', ticketRoutes);
+
+// Health check endpoint
+app.get('/api/health', (req, res) => res.status(200).json({ message: 'Backend is healthy' }));
 
 // Health check route
 app.get('/api/health', (req, res) => {

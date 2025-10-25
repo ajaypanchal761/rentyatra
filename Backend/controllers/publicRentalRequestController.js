@@ -446,6 +446,25 @@ const createRentalRequest = async (req, res) => {
     await rentalRequest.save();
     console.log('Rental request saved successfully:', rentalRequest._id);
 
+    // Update subscription counters
+    try {
+      const Subscription = require('../models/Subscription');
+      const subscription = await Subscription.findOne({
+        userId: req.user.userId,
+        status: 'active',
+        endDate: { $gt: new Date() }
+      });
+
+      if (subscription) {
+        subscription.currentListings += 1;
+        await subscription.save();
+        console.log('Subscription counters updated - currentListings:', subscription.currentListings);
+      }
+    } catch (subscriptionError) {
+      console.error('Error updating subscription counters:', subscriptionError);
+      // Continue without failing the rental request creation
+    }
+
     // Populate fields for response
     try {
       await rentalRequest.populate([
