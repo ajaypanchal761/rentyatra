@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   Package, MessageCircle, User, Edit, Trash2, Calendar, Zap, 
   CreditCard, Rocket, LogOut, MapPin, Eye, Menu, X, Home, 
-  Star, History, Share2, ShoppingCart,
+  Star, Share2, ShoppingCart,
   Mail, Info, FileText, Lock, UserX, ChevronRight, Shield, BadgeCheck, Clock, Save
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
@@ -246,12 +246,6 @@ const Dashboard = () => {
       items: [
         { id: 'buy-subscription', label: 'Buy Subscription', icon: ShoppingCart, color: 'purple' },
         { id: 'subscription', label: 'My Subscription', icon: CreditCard, color: 'indigo' },
-        { id: 'transaction-history', label: 'Transaction History', icon: History, color: 'teal' },
-      ]
-    },
-    {
-      title: 'Settings',
-      items: [
       ]
     },
     {
