@@ -4,7 +4,7 @@ import {
   Package, MessageCircle, User, Edit, Trash2, Calendar, Zap, 
   CreditCard, Rocket, LogOut, MapPin, Eye, Menu, X, Home, 
   Star, Share2, ShoppingCart,
-  Mail, Info, FileText, Lock, UserX, ChevronRight, Shield, BadgeCheck, Clock, Save
+  Mail, Info, FileText, Lock, ChevronRight, Shield, BadgeCheck, Clock, Save
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useApp } from '../../contexts/AppContext';
@@ -267,7 +267,6 @@ const Dashboard = () => {
     {
       title: '',
       items: [
-        { id: 'delete-account', label: 'Delete Account', icon: UserX, color: 'red' },
         { id: 'logout', label: 'Logout', icon: LogOut, color: 'red' },
       ]
     }
@@ -468,13 +467,6 @@ const Dashboard = () => {
   const handleMenuClick = (tabId) => {
     if (tabId === 'logout') {
       handleLogout();
-      return;
-    }
-    if (tabId === 'delete-account') {
-      if (window.confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
-        // Handle account deletion
-        handleLogout();
-      }
       return;
     }
     if (tabId === 'share-app') {
